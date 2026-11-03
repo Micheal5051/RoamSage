@@ -1,0 +1,255 @@
+.hotel-details-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 50px 24px;
+}
+
+.hotel-back-button {
+  display: inline-block;
+  color: #167c80;
+  text-decoration: none;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.hotel-back-button:hover {
+  text-decoration: underline;
+}
+
+.hotel-details-card {
+  background: white;
+  border: 1px solid #e3eceb;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow:
+    0 10px 30px
+    rgba(23, 50, 77, 0.08);
+}
+
+.hotel-details-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #edf2f1;
+}
+
+.hotel-details-eyebrow {
+  color: #167c80;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.hotel-details-header h1 {
+  color: #17324d;
+  font-size: 36px;
+  margin: 8px 0;
+}
+
+.hotel-details-location {
+  color: #64748b;
+  margin: 0;
+}
+
+.hotel-details-rating {
+  background: #e8f4f2;
+  color: #167c80;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hotel-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 40px;
+  padding-top: 32px;
+}
+
+.hotel-details-main h2 {
+  color: #17324d;
+  font-size: 22px;
+  margin: 0 0 12px;
+}
+
+.hotel-details-main p {
+  color: #64748b;
+  line-height: 1.7;
+  margin-bottom: 32px;
+}
+
+.hotel-details-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.hotel-details-amenities span {
+  background: #f1f7f6;
+  color: #36566b;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.hotel-price-card {
+  background: #f6faf9;
+  border: 1px solid #dcebea;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.hotel-price-card > span:first-child {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.hotel-price-card strong {
+  display: block;
+  color: #17324d;
+  font-size: 32px;
+  margin-top: 8px;
+}
+
+.hotel-price-card p {
+  color: #64748b;
+  margin: 4px 0 20px;
+}
+
+.hotel-available {
+  color: #167c80;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hotel-unavailable {
+  color: #b45309;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hotel-book-button {
+  width: 100%;
+  margin-top: 22px;
+  border: none;
+  background: #167c80;
+  color: white;
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hotel-book-button:hover {
+  background: #126a6d;
+}
+
+.hotel-book-button:disabled {
+  background: #94a3a8;
+  cursor: not-allowed;
+}
+
+.hotel-view-button {
+  display: inline-block;
+  border: none;
+  background: #167c80;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 9px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.hotel-view-button:hover {
+  background: #126a6d;
+}
+
+@media (max-width: 700px) {
+  .hotel-details-page {
+    padding: 35px 16px;
+  }
+
+  .hotel-details-card {
+    padding: 24px;
+  }
+
+  .hotel-details-header {
+    flex-direction: column;
+  }
+
+  .hotel-details-header h1 {
+    font-size: 30px;
+  }
+
+  .hotel-details-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+.hotel-details-navigation {
+  display: flex;
+
+  align-items: center;
+
+  gap: 20px;
+
+  margin-bottom: 24px;
+}
+
+.hotel-details-navigation .hotel-back-button {
+  margin-bottom: 0;
+}
+
+.hotel-destination-button {
+  display: inline-block;
+
+  color: #64748b;
+
+  text-decoration: none;
+
+  font-weight: 600;
+}
+
+.hotel-destination-button:hover {
+  color: #167c80;
+
+  text-decoration: underline;
+}
+.hotel-book-button {
+  display: block;
+
+  box-sizing: border-box;
+
+  text-align: center;
+
+  text-decoration: none;
+}
+.hotel-price-estimate-notice {
+  margin: 8px 0 14px;
+  color: #94651d;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.hotel-availability-unknown {
+  display: block;
+  margin: 12px 0;
+  color: #94651d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hotel-demo-notice {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}

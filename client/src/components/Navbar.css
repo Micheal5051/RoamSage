@@ -1,0 +1,142 @@
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 78px;
+  padding: 16px max(4%, calc((100% - 1320px) / 2));
+  border-bottom: 1px solid rgba(177, 210, 225, 0.13);
+  background: rgba(7, 20, 33, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.navbar-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  color: #f5fbff;
+  font-family: "Manrope", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  transition: color 200ms ease;
+}
+
+.navbar-logo:hover {
+  color: #35dfc1;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.navbar-links > a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  color: #b9c9d7;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: color 180ms ease, background 180ms ease;
+}
+
+.navbar-links > a::after {
+  position: absolute;
+  right: 13px;
+  bottom: 5px;
+  left: 13px;
+  height: 2px;
+  border-radius: 2px;
+  background: #35dfc1;
+  content: "";
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms ease;
+}
+
+.navbar-links > a:hover {
+  background: rgba(53, 223, 193, 0.07);
+  color: #ffffff;
+}
+
+.navbar-links > a:hover::after {
+  transform: scaleX(1);
+}
+
+.logout-button {
+  min-height: 42px;
+  padding: 10px 19px;
+  border: 1px solid rgba(53, 223, 193, 0.4);
+  border-radius: 999px;
+  background: rgba(53, 223, 193, 0.1);
+  color: #72f0d7;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.logout-button:hover {
+  transform: translateY(-2px);
+  background: rgba(53, 223, 193, 0.2);
+}
+
+.logout-button:focus-visible,
+.navbar a:focus-visible {
+  outline: 2px solid #35dfc1;
+  outline-offset: 3px;
+}
+
+@media (max-width: 850px) {
+  .navbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 24px;
+  }
+
+  .navbar-links {
+    justify-content: flex-start;
+    width: 100%;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 520px) {
+  .navbar {
+    padding: 14px 16px;
+  }
+
+  .navbar-logo {
+    font-size: 1.08rem;
+  }
+
+  .navbar-links {
+    gap: 4px;
+  }
+
+  .navbar-links > a {
+    min-height: 38px;
+    padding: 8px 9px;
+    font-size: 0.82rem;
+  }
+
+  .logout-button {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+}

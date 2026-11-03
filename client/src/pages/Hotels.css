@@ -1,0 +1,465 @@
+.hotels-page {
+  max-width: 1400px;
+
+  margin: 0 auto;
+
+  padding: 50px 24px;
+}
+
+
+/* =========================
+   HEADER
+   ========================= */
+
+.hotels-header {
+  margin-bottom: 32px;
+}
+
+.hotels-header .eyebrow {
+  color: #167c80;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  letter-spacing: 1.5px;
+
+  margin-bottom: 8px;
+}
+
+.hotels-header h1 {
+  color: #17324d;
+
+  font-size: 38px;
+
+  margin: 0 0 10px;
+}
+
+.hotels-header > p:last-child {
+  color: #64748b;
+
+  margin: 0;
+}
+
+
+/* =========================
+   MAP + CARDS LAYOUT
+   MAP = LEFT
+   CARDS = RIGHT
+   ========================= */
+
+.hotels-content {
+  display: grid;
+
+  grid-template-columns:
+    minmax(450px, 1.1fr)
+    minmax(0, 1fr);
+
+  gap: 30px;
+
+  align-items: start;
+}
+
+
+/* =========================
+   MAP SECTION
+   ========================= */
+
+.hotel-map-section {
+  position: sticky;
+
+  top: 20px;
+
+  min-width: 0;
+}
+
+.hotel-map-header {
+  margin-bottom: 16px;
+}
+
+.hotel-map-header h2 {
+  color: #17324d;
+
+  font-size: 24px;
+
+  margin: 0 0 6px;
+}
+
+.hotel-map-header p {
+  color: #64748b;
+
+  font-size: 14px;
+
+  margin: 0;
+}
+
+.hotel-map-container {
+  width: 100%;
+
+  height: 650px;
+
+  background: white;
+
+  border-radius: 18px;
+
+  overflow: hidden;
+
+  border: 1px solid #e3eceb;
+
+  box-shadow:
+    0 8px 24px
+    rgba(23, 50, 77, 0.08);
+}
+
+
+/* =========================
+   HOTEL RESULTS
+   ========================= */
+
+.hotel-results {
+  min-width: 0;
+}
+
+.hotel-results-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 18px;
+}
+
+.hotel-results-header h2 {
+  color: #17324d;
+
+  font-size: 24px;
+
+  margin: 0;
+}
+
+.hotel-results-header span {
+  color: #64748b;
+
+  font-size: 14px;
+}
+
+
+/* =========================
+   HOTEL LIST
+   ========================= */
+
+.hotel-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 18px;
+}
+
+
+/* =========================
+   HOTEL CARD
+   ========================= */
+
+.hotel-card {
+  background: white;
+
+  border: 1px solid #e3eceb;
+
+  border-radius: 18px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 8px 24px
+    rgba(23, 50, 77, 0.08);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border 0.2s ease;
+}
+
+.hotel-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 14px 30px
+    rgba(23, 50, 77, 0.12);
+}
+
+
+/* =========================
+   SELECTED HOTEL
+   ========================= */
+
+.hotel-card.selected {
+  border: 2px solid #167c80;
+
+  box-shadow:
+    0 14px 35px
+    rgba(22, 124, 128, 0.18);
+}
+
+
+/* =========================
+   CARD CONTENT
+   ========================= */
+
+.hotel-card-content {
+  padding: 22px;
+}
+
+.hotel-card-header {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 16px;
+}
+
+.hotel-card-header h2 {
+  color: #17324d;
+
+  font-size: 20px;
+
+  margin: 0;
+}
+
+.hotel-rating {
+  background: #e8f4f2;
+
+  color: #167c80;
+
+  padding: 6px 9px;
+
+  border-radius: 8px;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* =========================
+   DISTANCE + REVIEWS
+   ========================= */
+
+.hotel-distance,
+.hotel-reviews {
+  color: #64748b;
+
+  font-size: 14px;
+
+  margin: 9px 0 0;
+}
+
+
+/* =========================
+   PRICE
+   ========================= */
+
+.hotel-price {
+  margin-top: 18px;
+}
+
+.hotel-price strong {
+  color: #17324d;
+
+  font-size: 24px;
+}
+
+.hotel-price span {
+  color: #64748b;
+
+  font-size: 14px;
+}
+
+
+/* =========================
+   AMENITIES
+   ========================= */
+
+.hotel-amenities {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 7px;
+
+  margin-top: 16px;
+}
+
+.hotel-amenities span {
+  background: #f1f7f6;
+
+  color: #36566b;
+
+  border-radius: 8px;
+
+  padding: 6px 9px;
+
+  font-size: 12px;
+}
+
+
+/* =========================
+   CARD FOOTER
+   ========================= */
+
+.hotel-card-footer {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-top: 20px;
+
+  padding-top: 16px;
+
+  border-top: 1px solid #edf2f1;
+}
+
+.available {
+  color: #167c80;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+.unavailable {
+  color: #b45309;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+
+/* =========================
+   VIEW HOTEL BUTTON
+   ========================= */
+
+.hotel-view-button {
+  display: inline-block;
+
+  background: #167c80;
+
+  color: white;
+
+  padding: 10px 16px;
+
+  border-radius: 9px;
+
+  font-weight: 600;
+
+  text-decoration: none;
+
+  transition:
+    background 0.2s ease;
+}
+
+.hotel-view-button:hover {
+  background: #126a6d;
+}
+
+
+/* =========================
+   NO HOTELS
+   ========================= */
+
+.no-hotels {
+  padding: 50px 0;
+
+  color: #64748b;
+}
+
+
+/* =========================
+   TABLET
+   ========================= */
+
+@media (max-width: 1000px) {
+
+  .hotels-content {
+    grid-template-columns: 1fr;
+  }
+
+  .hotel-map-section {
+    position: static;
+  }
+
+  .hotel-map-container {
+    height: 500px;
+  }
+
+}
+
+
+/* =========================
+   MOBILE
+   ========================= */
+
+@media (max-width: 600px) {
+
+  .hotels-page {
+    padding: 35px 16px;
+  }
+
+  .hotels-header h1 {
+    font-size: 30px;
+  }
+
+  .hotel-card-header {
+    flex-direction: column;
+  }
+
+  .hotel-card-footer {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .hotel-view-button {
+    width: 100%;
+
+    text-align: center;
+  }
+
+  .hotel-map-container {
+    height: 400px;
+  }
+
+}
+.hotel-data-notice {
+  margin-top: 12px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #805b16;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.hotel-estimate-label {
+  margin: 5px 0 12px;
+  color: #9a6b25;
+  font-size: 12px;
+}
+
+.availability-unknown {
+  color: #94651d;
+  font-size: 12px;
+  font-weight: 600;
+}
