@@ -1,3 +1,4 @@
+import { apiUrl } from "../config/api";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Signup.css";
@@ -29,7 +30,7 @@ function Signup() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/auth/register",
+        apiUrl("/api/auth/register"),
         {
           method: "POST",
           headers: {

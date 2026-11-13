@@ -1,93 +1,5 @@
-const HYDERABAD_ATTRACTIONS = [
-  {
-    name: "Charminar",
-    description: "Explore Hyderabad’s iconic historic monument and the surrounding old city.",
-    latitude: 17.3616,
-    longitude: 78.4747,
-    durationMinutes: 75,
-    interests: ["History", "Architecture", "Shopping"],
-    openingHours: null,
-    closedDays: null,
-    hoursVerified: false
-  },
-  {
-    name: "Chowmahalla Palace",
-    description: "Discover the palace complex and its historic courtyards.",
-    latitude: 17.3578,
-    longitude: 78.4717,
-    durationMinutes: 75,
-    interests: ["History", "Architecture"],
-    openingHours: null,
-    closedDays: null,
-    hoursVerified: false
-  },
-  {
-    name: "Salar Jung Museum",
-    description: "Browse a large collection of art, antiques, and historical objects.",
-    latitude: 17.3713,
-    longitude: 78.4804,
-    durationMinutes: 90,
-    interests: ["History", "Architecture"],
-    openingHours: null,
-    closedDays: null,
-    hoursVerified: false
-  },
-  {
-    name: "Hussain Sagar Lake",
-    description: "Enjoy views of the lake and a relaxed outdoor stop.",
-    latitude: 17.4239,
-    longitude: 78.4738,
-    durationMinutes: 60,
-    interests: ["Nature"],
-    openingHours: null,
-    closedDays: null,
-    hoursVerified: false
-  },
-  {
-    name: "Birla Mandir",
-    description: "Visit the hilltop temple and enjoy views across the city.",
-    latitude: 17.4062,
-    longitude: 78.4691,
-    durationMinutes: 60,
-    interests: ["History", "Architecture"],
-    openingHours: null,
-    closedDays: null,
-    hoursVerified: false
-  },
-  {
-    name: "Golconda Fort",
-    description: "Explore the historic fort complex. Allow extra time for walking uphill.",
-    latitude: 17.3833,
-    longitude: 78.4011,
-    durationMinutes: 100,
-    interests: ["History", "Architecture"],
-    openingHours: null,
-    closedDays: null,
-    hoursVerified: false
-  },
-  {
-    name: "Shilparamam",
-    description: "Explore arts, crafts, and cultural displays at this village-style complex.",
-    latitude: 17.4523,
-    longitude: 78.3793,
-    durationMinutes: 75,
-    interests: ["Shopping", "Culture"],
-    openingHours: null,
-    closedDays: null,
-    hoursVerified: false
-  },
-  {
-    name: "KBR National Park",
-    description: "Take a nature walk in a green space within the city.",
-    latitude: 17.4239,
-    longitude: 78.4235,
-    durationMinutes: 60,
-    interests: ["Nature"],
-    openingHours: null,
-    closedDays: null,
-    hoursVerified: false
-  }
-];
+
+const attractions = require("../data/attractions");
 
 const DAY_START = 9 * 60;
 const DAY_END = 17 * 60;
@@ -95,7 +7,6 @@ const LUNCH_START = 12 * 60 + 30;
 const LUNCH_END = 13 * 60 + 15;
 const TRAVEL_BUFFER = 30;
 const RETURN_BUFFER = 60;
-const MAX_ATTRACTIONS_PER_DAY = 3;
 
 function parseDate(value) {
   if (
@@ -162,7 +73,6 @@ function getDayName(date) {
   });
 }
 
-// Accepts datetime-local values such as "2026-11-03T11:00".
 function getDateTimeParts(value) {
   if (
     typeof value !== "string" ||
@@ -172,8 +82,7 @@ function getDateTimeParts(value) {
   }
 
   const date = value.slice(0, 10);
-  const time = value.slice(11, 16);
-  const minutes = timeToMinutes(time);
+  const minutes = timeToMinutes(value.slice(11, 16));
 
   if (!parseDate(date) || minutes === null) {
     return null;
@@ -182,21 +91,42 @@ function getDateTimeParts(value) {
   return { date, minutes };
 }
 
+// Convert the actual catalogue fields into the scheduler's format.
+function prepareAttraction(attraction) {
+  return {
+    ...attraction,
+    durationMinutes: Number(attraction.estimatedVisitMinutes),
+    interests: [
+      ...(Array.isArray(attraction.tags) ? attraction.tags : []),
+      ...(attraction.category ? [attraction.category] : [])
+    ],
+    openingHours:
+      attraction.openingTime && attraction.closingTime
+        ? {
+            open: attraction.openingTime,
+            close: attraction.closingTime
+          }
+        : null,
+    closedDays: Array.isArray(attraction.closedDays)
+      ? attraction.closedDays
+      : []
+  };
+}
+
 function getOpeningWindow(place) {
+  const open = timeToMinutes(place.openingHours?.open);
+  const close = timeToMinutes(place.openingHours?.close);
+
   if (
     place.hoursVerified === true &&
-    place.openingHours &&
-    typeof place.openingHours.open === "string" &&
-    typeof place.openingHours.close === "string"
+    open !== null &&
+    close !== null &&
+    close > open
   ) {
-    const open = timeToMinutes(place.openingHours.open);
-    const close = timeToMinutes(place.openingHours.close);
-
-    if (open !== null && close !== null && close > open) {
-      return { open, close, verified: true };
-    }
+    return { open, close, verified: true };
   }
 
+  // Unknown or unverified hours use a planning assumption.
   return {
     open: DAY_START,
     close: DAY_END,
@@ -208,7 +138,7 @@ function isClosedOn(place, dayName) {
   return (
     Array.isArray(place.closedDays) &&
     place.closedDays.some(
-      (day) =>
+      day =>
         typeof day === "string" &&
         day.toLowerCase() === dayName.toLowerCase()
     )
@@ -227,7 +157,16 @@ function findAvailableSlot(
   dayEnd = DAY_END
 ) {
   const window = getOpeningWindow(place);
-  const travelTime = hasPreviousAttraction ? TRAVEL_BUFFER : 0;
+  const travelTime = typeof hasPreviousAttraction === "number"
+    ? hasPreviousAttraction
+    : hasPreviousAttraction ? TRAVEL_BUFFER : 0;
+
+  if (
+    !Number.isFinite(place.durationMinutes) ||
+    place.durationMinutes <= 0
+  ) {
+    return null;
+  }
 
   let start = Math.max(
     currentTime + travelTime,
@@ -235,22 +174,45 @@ function findAvailableSlot(
     dayStart
   );
 
-  if (
-    start < LUNCH_START &&
-    start + place.durationMinutes > LUNCH_START
-  ) {
-    start = Math.max(LUNCH_END, currentTime + travelTime);
-  } else if (start >= LUNCH_START && start < LUNCH_END) {
-    start = Math.max(LUNCH_END, currentTime + travelTime);
+  // Keep both the travel buffer and the attraction visit outside lunch.
+  // If either would overlap 12:30–1:15 PM, move the complete travel +
+  // visit block to after lunch.
+  const travelStart = start - travelTime;
+  const attractionEnd = start + place.durationMinutes;
+
+  const travelOverlapsLunch =
+    travelTime > 0 &&
+    overlaps(
+      travelStart,
+      start,
+      LUNCH_START,
+      LUNCH_END
+    );
+
+  const attractionOverlapsLunch = overlaps(
+    start,
+    attractionEnd,
+    LUNCH_START,
+    LUNCH_END
+  );
+
+  if (travelOverlapsLunch || attractionOverlapsLunch) {
+    start = Math.max(
+      LUNCH_END + travelTime,
+      currentTime + travelTime,
+      window.open,
+      dayStart
+    );
   }
 
   const end = start + place.durationMinutes;
 
-  if (start < dayStart || end > dayEnd || end > window.close) {
-    return null;
-  }
-
-  if (overlaps(start, end, LUNCH_START, LUNCH_END)) {
+  if (
+    start < dayStart ||
+    end > dayEnd ||
+    end > window.close ||
+    overlaps(start, end, LUNCH_START, LUNCH_END)
+  ) {
     return null;
   }
 
@@ -262,10 +224,9 @@ function findAvailableSlot(
   };
 }
 
-// Get coordinates from the attraction closest to the lunch break.
 function getLunchLocation(schedule) {
-  const attractions = schedule
-    .filter((item) => {
+  const scheduledAttractions = schedule
+    .filter(item => {
       const lat = Number(item.latitude);
       const lon = Number(item.longitude);
 
@@ -279,7 +240,7 @@ function getLunchLocation(schedule) {
         lon <= 180
       );
     })
-    .map((item) => ({
+    .map(item => ({
       title: item.title,
       latitude: Number(item.latitude),
       longitude: Number(item.longitude),
@@ -287,24 +248,19 @@ function getLunchLocation(schedule) {
       end: timeToMinutes12(item.endTime)
     }));
 
-  if (attractions.length === 0) {
-    return null;
-  }
+  if (scheduledAttractions.length === 0) return null;
 
-  const previousAttractions = attractions
-    .filter((item) => item.end <= LUNCH_START)
+  const previous = scheduledAttractions
+    .filter(item => item.end <= LUNCH_START)
     .sort((a, b) => b.end - a.end);
 
-  const nextAttractions = attractions
-    .filter((item) => item.start >= LUNCH_END)
+  const next = scheduledAttractions
+    .filter(item => item.start >= LUNCH_END)
     .sort((a, b) => a.start - b.start);
 
-  const nearest =
-    previousAttractions[0] || nextAttractions[0];
+  const nearest = previous[0] || next[0];
 
-  if (!nearest) {
-    return null;
-  }
+  if (!nearest) return null;
 
   return {
     lat: nearest.latitude,
@@ -315,12 +271,55 @@ function getLunchLocation(schedule) {
   };
 }
 
+function normalizeInterest(value) {
+  const normalized = value.trim().toLowerCase();
+
+  const aliases = {
+    history: "historical",
+    beaches: "beach",
+    beach: "beach",
+    architecture: "architecture",
+    wildlife: "wildlife",
+    adventure: "adventure",
+    spirituality: "spiritual",
+    spiritual: "spiritual",
+    culture: "culture",
+    nature: "nature"
+  };
+
+  return aliases[normalized] || normalized;
+}
+
+function getDistanceKm(first, second) {
+  const toRadians = value => (value * Math.PI) / 180;
+  if ([first?.latitude, first?.longitude, second?.latitude, second?.longitude].some(value => value === null || value === undefined || value === "")) return null;
+  const lat1 = Number(first.latitude);
+  const lon1 = Number(first.longitude);
+  const lat2 = Number(second.latitude);
+  const lon2 = Number(second.longitude);
+  if (![lat1, lon1, lat2, lon2].every(Number.isFinite)) return null;
+  if (Math.abs(lat1) > 90 || Math.abs(lat2) > 90 || Math.abs(lon1) > 180 || Math.abs(lon2) > 180) return null;
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function estimateTravelMinutes(first, second) {
+  const distanceKm = getDistanceKm(first, second);
+  if (distanceKm === null) return TRAVEL_BUFFER;
+  // Straight-line distance is adjusted to approximate road distance.
+  return Math.max(10, Math.ceil((distanceKm * 1.4 / 30) * 60));
+}
+
 function generateItinerary({
   destination,
   startDate,
   endDate,
   interests = [],
-  journeyPlan = null
+  journeyPlan = null,
+  selectedAttractionIds = null,
+  previewOnly = false
 }) {
   const start = parseDate(startDate);
   const end = parseDate(endDate);
@@ -333,19 +332,17 @@ function generateItinerary({
     throw error;
   }
 
-  if (!Array.isArray(interests)) {
-    const error = new Error("Interests must be an array.");
+  if (
+    typeof destination !== "string" ||
+    !destination.trim()
+  ) {
+    const error = new Error("Please provide a destination.");
     error.status = 400;
     throw error;
   }
 
-  if (
-    typeof destination !== "string" ||
-    destination.trim().toLowerCase() !== "hyderabad"
-  ) {
-    const error = new Error(
-      "The current attraction dataset supports Hyderabad only."
-    );
+  if (!Array.isArray(interests)) {
+    const error = new Error("Interests must be an array.");
     error.status = 400;
     throw error;
   }
@@ -353,8 +350,8 @@ function generateItinerary({
   const dayCount =
     Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
 
-  if (dayCount > 10) {
-    const error = new Error("Please plan a trip of 10 days or fewer.");
+  if (dayCount > 30) {
+    const error = new Error("Please plan a trip of 30 days or fewer.");
     error.status = 400;
     throw error;
   }
@@ -364,6 +361,102 @@ function generateItinerary({
     error.status = 400;
     throw error;
   }
+
+  const selectedInterests = interests.filter(
+    interest => typeof interest === "string"
+  );
+
+  const normalizedDestination = destination.trim().toLowerCase();
+
+  // Use the full curated attraction catalogue.
+  const destinationAttractions = attractions
+    .filter(
+      attraction =>
+        typeof attraction.destination === "string" &&
+        attraction.destination.trim().toLowerCase() ===
+          normalizedDestination
+    )
+    .map(prepareAttraction)
+    .filter(
+      attraction =>
+        attraction.name &&
+        Number.isFinite(attraction.durationMinutes) &&
+        attraction.durationMinutes > 0
+    );
+
+  const availableAttractions = destinationAttractions.map(place => ({
+    id: place.id,
+    name: place.name,
+    category: place.category || "Attraction",
+    description: place.description || "",
+    estimatedVisitMinutes: place.durationMinutes,
+    latitude: place.latitude ?? null,
+    longitude: place.longitude ?? null,
+    hasCoordinates: place.latitude != null && place.longitude != null && Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude))
+  }));
+
+  if (previewOnly) {
+    return {
+      destination: destination.trim(),
+      availableAttractions,
+      selectionRequired: true,
+      travelEstimateNote: "Travel estimates use approximate straight-line distance adjusted for roads; actual routes and traffic may differ."
+    };
+  }
+
+  if (destinationAttractions.length === 0) {
+    const error = new Error(
+      `No attractions are currently available for ${destination}.`
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  const normalizedInterests = selectedInterests.map(normalizeInterest);
+
+  const preferred = normalizedInterests.length
+    ? destinationAttractions.filter(place =>
+        place.interests.some(interest =>
+          normalizedInterests.includes(normalizeInterest(interest))
+        )
+      )
+    : [];
+
+  // Schedule matching attractions first, then use the rest of the
+  // destination catalogue to fill the remaining sightseeing days.
+  // This prevents a small set of interest matches from leaving later
+  // trip days empty.
+  const preferredIds = new Set(
+    preferred.map(place => place.id || place.name)
+  );
+
+  const preferredSorted = [...preferred].sort(
+    (a, b) => (Number(b.priority) || 0) - (Number(a.priority) || 0)
+  );
+
+  const otherAttractions = destinationAttractions
+    .filter(place =>
+      !preferredIds.has(place.id || place.name)
+    )
+    .sort((a, b) => (Number(b.priority) || 0) - (Number(a.priority) || 0));
+
+  let remaining = [
+    ...preferredSorted,
+    ...otherAttractions
+  ];
+
+  if (Array.isArray(selectedAttractionIds)) {
+    const selectedIds = new Set(selectedAttractionIds.map(String));
+    remaining = destinationAttractions.filter(place => selectedIds.has(String(place.id)));
+    if (remaining.length === 0) {
+      const error = new Error("Select at least one attraction before generating your itinerary.");
+      error.status = 400;
+      throw error;
+    }
+  }
+
+  // Count only valid catalogue entries that can actually be scheduled.
+  const selectedAttractionCount = remaining.length;
 
   const plan = journeyPlan || {};
   const outbound = plan.outbound || {};
@@ -388,29 +481,31 @@ function generateItinerary({
     throw error;
   }
 
-  const selectedInterests = interests.filter(
-    (interest) => typeof interest === "string"
-  );
-
-  const preferred = selectedInterests.length
-    ? HYDERABAD_ATTRACTIONS.filter((place) =>
-        place.interests.some((interest) =>
-          selectedInterests.some(
-            (selected) =>
-              selected.toLowerCase() === interest.toLowerCase()
-          )
-        )
-      )
-    : HYDERABAD_ATTRACTIONS;
-
-  const remaining = [
-    ...(preferred.length ? preferred : HYDERABAD_ATTRACTIONS)
-  ];
-
   const days = [];
   const lastReasons = new Map();
 
+  // Reserve a small number of days for independent exploration on longer trips.
+  // Short trips remain focused on sightseeing; longer trips get intentional free time.
+  const reservedFlexibleDays = dayCount >= 10 ? 3 : dayCount >= 5 ? 2 : 0;
+  const sightseeingDayLimit = Math.max(1, dayCount - reservedFlexibleDays);
+  const flexibleDayIdeas = [
+    "Shopping and local markets",
+    "Explore local food, neighbourhoods or revisit a favourite place",
+    "Relax, enjoy an optional nearby day trip or explore independently"
+  ];
+
   for (let dayIndex = 0; dayIndex < dayCount; dayIndex++) {
+    const isReservedFlexibleDay = dayIndex >= sightseeingDayLimit;
+    const remainingDays = Math.max(1, sightseeingDayLimit - dayIndex);
+    const remainingVisitMinutes = remaining.reduce(
+      (total, place) => total + place.durationMinutes,
+      0
+    );
+    // Spread the remaining sightseeing workload across the remaining trip days.
+    // Keep a comfortable daily visit target instead of filling each day to 5 PM.
+    const dailyVisitTargetMinutes = remaining.length > 0
+      ? Math.min(300, Math.ceil(remainingVisitMinutes / remainingDays))
+      : 0;
     const date = new Date(start.getTime() + dayIndex * 86400000);
     const dateString = date.toISOString().slice(0, 10);
     const dayName = getDayName(date);
@@ -421,7 +516,7 @@ function generateItinerary({
     let arrivalDay = false;
     let returnDay = false;
 
-    // On arrival day, schedule arrival, transfer and rest first.
+    // Arrival and rest are scheduled before sightseeing.
     if (arrival && arrival.date === dateString) {
       arrivalDay = true;
 
@@ -431,7 +526,7 @@ function generateItinerary({
 
       schedule.push({
         type: "travel",
-        title: "Arrive in Hyderabad",
+        title: `Arrive in ${destination.trim()}`,
         description: "Arrival time supplied in your journey plan.",
         durationMinutes: 0,
         startTime: formatTime(arrivalStart),
@@ -466,7 +561,7 @@ function generateItinerary({
       currentTime = Math.max(DAY_START, restEnd);
     }
 
-    // On the return day, stop sightseeing before departure.
+    // Leave time for the return journey.
     if (returnDeparture && returnDeparture.date === dateString) {
       returnDay = true;
       dayEnd = Math.min(
@@ -475,30 +570,35 @@ function generateItinerary({
       );
     }
 
-    // Only schedule attractions when there is usable sightseeing time.
     let attractionCount = 0;
+    let dailyVisitMinutes = 0;
+    let previousAttraction = null;
 
-    if (dayEnd > currentTime) {
-      for (let index = 0; index < remaining.length;) {
-        if (attractionCount >= MAX_ATTRACTIONS_PER_DAY) {
-          break;
-        }
+    // Keep reserved flexible days free of scheduled sightseeing. The user can
+    // still add optional activities manually from the frontend.
+    while (
+      !isReservedFlexibleDay &&
+      dayEnd > currentTime &&
+      remaining.length > 0 &&
+      (attractionCount === 0 || dailyVisitMinutes < dailyVisitTargetMinutes)
+    ) {
+      const candidates = [];
 
+      for (let index = 0; index < remaining.length; index++) {
         const place = remaining[index];
 
         if (isClosedOn(place, dayName)) {
-          lastReasons.set(
-            place.name,
-            `Marked closed on ${dayName}.`
-          );
-          index++;
+          lastReasons.set(place.name, `Closed on ${dayName}.`);
           continue;
         }
 
+        const travelMinutes = previousAttraction
+          ? estimateTravelMinutes(previousAttraction, place)
+          : 0;
         const slot = findAvailableSlot(
           place,
           currentTime,
-          attractionCount > 0,
+          travelMinutes,
           currentTime,
           dayEnd
         );
@@ -506,50 +606,94 @@ function generateItinerary({
         if (!slot) {
           lastReasons.set(
             place.name,
-            `Could not fit within the available time on ${dateString}.`
+            `Could not fit within the remaining sightseeing time on ${dateString}.`
           );
-          index++;
           continue;
         }
 
-        schedule.push({
-          type: "attraction",
-          title: place.name,
-          description: place.description,
-          latitude: place.latitude,
-          longitude: place.longitude,
-          durationMinutes: place.durationMinutes,
-          openingHours: place.openingHours,
-          closedDays: place.closedDays,
-          hoursVerified: slot.verified,
-          hoursNote: slot.verified
-            ? "Opening hours are marked verified in the attraction dataset."
-            : "Opening hours are unverified. The 9 AM–5 PM window is a planning assumption.",
-          startTime: formatTime(slot.start),
-          endTime: formatTime(slot.end)
-        });
+        const distanceKm = previousAttraction
+          ? getDistanceKm(previousAttraction, place)
+          : 0;
+        const priority = Number(place.priority) || 0;
+        const interestMatch = place.interests.some(interest =>
+          normalizedInterests.includes(normalizeInterest(interest))
+        );
 
-        currentTime = slot.end;
-        attractionCount++;
-        lastReasons.delete(place.name);
-        remaining.splice(index, 1);
+        // Priority gets the day started, then proximity keeps the route
+        // compact. Duration is a small tie-breaker, not the main objective.
+        const score =
+          priority * 2.5 +
+          (interestMatch ? 4 : 0) -
+          slot.travelMinutes * 0.7 -
+          place.durationMinutes * 0.012 -
+          (distanceKm || 0) * 0.15;
+
+        candidates.push({ index, place, slot, score });
       }
+
+      if (candidates.length === 0) break;
+
+      candidates.sort((a, b) => b.score - a.score);
+      const selected = candidates[0];
+      const { place, slot, index } = selected;
+
+      if (slot.travelMinutes > 0) {
+        schedule.push({
+          type: "travel",
+          title: `Travel to ${place.name}`,
+          description: "Estimated travel time based on approximate road-adjusted distance. Actual routes and traffic may vary.",
+          durationMinutes: slot.travelMinutes,
+          startTime: formatTime(slot.start - slot.travelMinutes),
+          endTime: formatTime(slot.start),
+          hoursVerified: false
+        });
+      }
+
+      schedule.push({
+        type: "attraction",
+        id: place.id,
+        title: place.name,
+        description: place.description,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        durationMinutes: place.durationMinutes,
+        openingHours: place.openingHours,
+        closedDays: place.closedDays,
+        hoursVerified: slot.verified,
+        hoursNote: slot.verified
+          ? "Opening hours are marked verified in the attraction dataset."
+          : "Opening hours are unverified. The 9 AM–5 PM window is a planning assumption.",
+        startTime: formatTime(slot.start),
+        endTime: formatTime(slot.end)
+      });
+
+      currentTime = slot.end;
+      previousAttraction = place;
+      attractionCount++;
+      dailyVisitMinutes += place.durationMinutes;
+      lastReasons.delete(place.name);
+      remaining.splice(index, 1);
     }
 
-    // Add lunch only if it does not overlap arrival, transfer or rest.
-    const lunchConflictsWithJourney = schedule.some((item) => {
+    // Add lunch on days that contain sightseeing. Do not create a
+    // lunch-only day, and do not overlap arrival/rest/return events.
+    // Attraction visits and their travel buffers are already kept clear
+    // of the lunch window by findAvailableSlot().
+    const lunchConflict = schedule.some(item => {
       if (!item.startTime || !item.endTime) return false;
-
-      const itemStart = timeToMinutes12(item.startTime);
-      const itemEnd = timeToMinutes12(item.endTime);
 
       return (
         item.durationMinutes > 0 &&
-        overlaps(itemStart, itemEnd, LUNCH_START, LUNCH_END)
+        overlaps(
+          timeToMinutes12(item.startTime),
+          timeToMinutes12(item.endTime),
+          LUNCH_START,
+          LUNCH_END
+        )
       );
     });
 
-    if (!lunchConflictsWithJourney) {
+    if (attractionCount > 0 && !lunchConflict) {
       schedule.push({
         type: "break",
         title: "Lunch break",
@@ -577,7 +721,8 @@ function generateItinerary({
 
     schedule.sort(
       (a, b) =>
-        timeToMinutes12(a.startTime) - timeToMinutes12(b.startTime)
+        timeToMinutes12(a.startTime) -
+        timeToMinutes12(b.startTime)
     );
 
     days.push({
@@ -585,12 +730,18 @@ function generateItinerary({
       date: dateString,
       arrivalDay,
       returnDay,
-      schedule
+      schedule,
+      attractionCount,
+      isRestDay: (attractionCount === 0 && !arrivalDay && !returnDay) || isReservedFlexibleDay,
+      isFlexibleDay: isReservedFlexibleDay || (attractionCount === 0 && !arrivalDay && !returnDay),
+      flexibleDayIdeas: isReservedFlexibleDay
+        ? [flexibleDayIdeas[Math.min(dayIndex - sightseeingDayLimit, flexibleDayIdeas.length - 1)], "Optional activities can be added if you want a fuller day."]
+        : []
     });
   }
 
   return {
-    destination: "Hyderabad",
+    destination: destination.trim(),
     startDate,
     endDate,
     interests: selectedInterests,
@@ -602,14 +753,24 @@ function generateItinerary({
       lunchEnd: formatTime(LUNCH_END),
       estimatedTravelBufferMinutes: TRAVEL_BUFFER,
       returnPreparationBufferMinutes: RETURN_BUFFER,
-      maxAttractionsPerDay: MAX_ATTRACTIONS_PER_DAY,
+      schedulingStrategy: "Relaxed multi-day scheduling: distributes attractions across the sightseeing portion of the trip, reserves flexible days on trips of five or more days, and respects opening hours, travel, lunch, arrival and departure constraints.",
+      dailySightseeingTargetMinutes: 300,
+      reservedFlexibleDays,
+      sightseeingDayLimit,
       unknownOpeningHoursPolicy:
         "Unknown hours use a provisional 9 AM–5 PM window and are marked unverified.",
       journeyPlanPolicy:
         "Arrival, rest and return scheduling use the journey times entered by the user. Transport availability and travel durations are not live-verified."
     },
     days,
-    unplannedAttractions: remaining.map((place) => ({
+    recommendedDays: days.filter(day => day.attractionCount > 0).length,
+    flexibleDays: days.filter(day => day.isFlexibleDay).length,
+    tripDurationMessage: `Your ${dayCount}-day trip includes up to ${sightseeingDayLimit} sightseeing days and ${reservedFlexibleDays} planned flexible day(s) for shopping, local experiences, relaxation or independent exploration. If the selected attractions need fewer sightseeing days, any additional unfilled days will also remain flexible.`,
+    selectedAttractionCount,
+    scheduledAttractionCount: days.reduce((total, day) => total + day.schedule.filter(item => item.type === "attraction").length, 0),
+    travelEstimateNote: "Travel times are estimates based on approximate road-adjusted distance, not live routing or traffic. Confirm long-distance transfers before travelling.",
+    unplannedAttractions: remaining.map(place => ({
+      id: place.id,
       name: place.name,
       reason:
         lastReasons.get(place.name) ||

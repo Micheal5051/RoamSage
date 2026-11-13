@@ -1,0 +1,1 @@
+web: sh -c 'python -c "from vector_store import build_vector_store; build_vector_store()" && exec gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 app:app'

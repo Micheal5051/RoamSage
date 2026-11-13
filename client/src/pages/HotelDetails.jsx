@@ -1,3 +1,4 @@
+import { apiUrl } from "../config/api";
 import {
   useEffect,
   useState
@@ -17,15 +18,11 @@ function HotelDetails() {
   const [searchParams] = useSearchParams();
 
   const [hotel, setHotel] = useState(null);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
   const latitude = searchParams.get("latitude");
-
   const longitude = searchParams.get("longitude");
-
   const destinationId = searchParams.get("destinationId");
 
   useEffect(() => {
@@ -35,7 +32,7 @@ function HotelDetails() {
         setError("");
 
         const response = await fetch(
-          `http://localhost:5000/api/hotels/${id}`
+          apiUrl(`/api/hotels/${id}`)
         );
 
         if (!response.ok) {
@@ -47,7 +44,6 @@ function HotelDetails() {
         setHotel(data);
       } catch (fetchError) {
         console.error(fetchError);
-
         setError("Unable to load this hotel.");
       } finally {
         setLoading(false);
@@ -65,7 +61,10 @@ function HotelDetails() {
   if (loading) {
     return (
       <main className="hotel-details-page">
-        <p>Loading hotel...</p>
+        <div className="hotel-details-state">
+          <div className="hotel-details-spinner"></div>
+          <p>Loading hotel...</p>
+        </div>
       </main>
     );
   }
@@ -73,14 +72,17 @@ function HotelDetails() {
   if (error) {
     return (
       <main className="hotel-details-page">
-        <p>{error}</p>
+        <div className="hotel-details-state">
+          <h2>Hotel not available</h2>
+          <p>{error}</p>
 
-        <Link
-          to={hotelsUrl}
-          className="hotel-back-button"
-        >
-          ← Back to Hotels
-        </Link>
+          <Link
+            to={hotelsUrl}
+            className="hotel-back-button"
+          >
+            ← Back to Hotels
+          </Link>
+        </div>
       </main>
     );
   }
@@ -88,14 +90,17 @@ function HotelDetails() {
   if (!hotel) {
     return (
       <main className="hotel-details-page">
-        <p>Hotel information is unavailable.</p>
+        <div className="hotel-details-state">
+          <h2>Hotel information unavailable</h2>
+          <p>We couldn't find the requested hotel.</p>
 
-        <Link
-          to={hotelsUrl}
-          className="hotel-back-button"
-        >
-          ← Back to Hotels
-        </Link>
+          <Link
+            to={hotelsUrl}
+            className="hotel-back-button"
+          >
+            ← Back to Hotels
+          </Link>
+        </div>
       </main>
     );
   }
@@ -106,17 +111,18 @@ function HotelDetails() {
     `&longitude=${longitude || ""}` +
     `&destinationId=${destinationId || ""}`;
 
-  const formattedPrice = Number(
-    hotel.price?.amount || 0
-  ).toLocaleString("en-IN");
+  const formattedPrice =
+    hotel.price?.amount != null &&
+    Number.isFinite(Number(hotel.price.amount))
+      ? Number(hotel.price.amount).toLocaleString("en-IN")
+      : null;
 
   return (
     <main className="hotel-details-page">
 
-      {/* NAVIGATION */}
+      {/* Navigation */}
 
       <div className="hotel-details-navigation">
-
         <Link
           to={hotelsUrl}
           className="hotel-back-button"
@@ -132,38 +138,31 @@ function HotelDetails() {
             ← Back to Destination
           </Link>
         )}
-
       </div>
 
-
-      {/* HOTEL DETAILS */}
+      {/* Hotel Details */}
 
       <section className="hotel-details-card">
 
-        {/* HEADER */}
+        {/* Header */}
 
         <div className="hotel-details-header">
-
           <div>
-
             <span className="hotel-details-eyebrow">
               HOTEL DETAILS
             </span>
 
-            <h1>
-              {hotel.name}
-            </h1>
+            <h1>{hotel.name}</h1>
 
             <p className="hotel-details-location">
               📍 {hotel.address || hotel.destination}
             </p>
 
-            <p className="hotel-details-location">
+            <p className="hotel-details-location hotel-distance-info">
               {Number.isFinite(Number(hotel.distance))
                 ? `${Number(hotel.distance).toFixed(2)} km from selected destination`
                 : "Distance not available"}
             </p>
-
           </div>
 
           <div className="hotel-details-rating">
@@ -171,118 +170,134 @@ function HotelDetails() {
               ? `⭐ ${hotel.rating}`
               : "Rating not available"}
           </div>
-
         </div>
 
-
-        {/* MAIN CONTENT */}
+        {/* Main Content */}
 
         <div className="hotel-details-grid">
 
           <div className="hotel-details-main">
 
-            <h2>
-              About this hotel
-            </h2>
+            <section className="hotel-info-section">
+              <span className="hotel-section-eyebrow">
+                ABOUT THE PROPERTY
+              </span>
 
-            <p>
-              {hotel.description ||
-                `Enjoy your stay at ${hotel.name}. This property is located in ${hotel.destination || "your selected destination"}.`}
-            </p>
+              <h2>About this hotel</h2>
 
+              <p>
+                {hotel.description ||
+                  `Enjoy your stay at ${hotel.name}. This property is located in ${hotel.destination || "your selected destination"}.`}
+              </p>
+            </section>
 
-            {/* AMENITIES */}
+            {/* Amenities */}
 
-            <h2>
-              Amenities
-            </h2>
+            <section className="hotel-info-section">
+              <span className="hotel-section-eyebrow">
+                FACILITIES
+              </span>
 
-            <div className="hotel-details-amenities">
+              <h2>Amenities</h2>
 
-              {Array.isArray(hotel.amenities) &&
-                hotel.amenities.map((amenity) => (
-                  <span key={amenity}>
-                    {amenity}
+              <div className="hotel-details-amenities">
+                {Array.isArray(hotel.amenities) &&
+                  hotel.amenities.map((amenity) => (
+                    <span key={amenity}>
+                      {amenity}
+                    </span>
+                  ))}
+
+                {(!hotel.amenities ||
+                  hotel.amenities.length === 0) && (
+                  <p>
+                    Amenities information is not available.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            {/* Reviews */}
+
+            <section className="hotel-info-section">
+              <span className="hotel-section-eyebrow">
+                GUEST EXPERIENCE
+              </span>
+
+              <h2>Guest Reviews</h2>
+
+              {hotel.rating != null &&
+              hotel.reviewCount != null ? (
+                <div className="hotel-review-summary">
+                  <span className="hotel-review-star">
+                    ★
                   </span>
-                ))}
 
-              {(!hotel.amenities ||
-                hotel.amenities.length === 0) && (
+                  <p>
+                    <strong>{hotel.rating}</strong> based on{" "}
+                    {Number(
+                      hotel.reviewCount
+                    ).toLocaleString("en-IN")}{" "}
+                    reviews
+                  </p>
+                </div>
+              ) : (
                 <p>
-                  Amenities information is not available.
+                  Guest ratings and review information
+                  are not currently available.
                 </p>
               )}
-
-            </div>
-
-
-            {/* REVIEWS */}
-
-            <h2>
-              Guest Reviews
-            </h2>
-
-            {hotel.rating != null &&
-            hotel.reviewCount != null ? (
-              <p>
-                ⭐ {hotel.rating} based on{" "}
-                {Number(hotel.reviewCount).toLocaleString("en-IN")}{" "}
-                reviews
-              </p>
-            ) : (
-              <p>
-                Guest ratings and review information
-                are not currently available.
-              </p>
-            )}
-
+            </section>
           </div>
 
-
-          {/* PRICE AND BOOKING */}
+          {/* Price and Booking */}
 
           <aside className="hotel-details-sidebar">
-
             <div className="hotel-price-card">
 
-              <span>
+              <span className="hotel-price-eyebrow">
                 ESTIMATED PRICE
               </span>
 
-              <strong>
-                ₹{formattedPrice}
-              </strong>
+              {formattedPrice !== null ? (
+                <strong className="hotel-price-amount">
+                  ₹{formattedPrice}
+                </strong>
+              ) : (
+                <strong className="hotel-price-amount hotel-price-unavailable">
+                  Price not available
+                </strong>
+              )}
 
-              <p>
+              <p className="hotel-price-period">
                 {hotel.price?.period || "per night"}
               </p>
+
+              <div className="hotel-price-divider"></div>
 
               <p className="hotel-price-estimate-notice">
                 This is an illustrative estimate.
                 Actual hotel rates may differ.
               </p>
 
+              {/* Availability */}
 
-              {/* AVAILABILITY */}
+              <div className="hotel-availability-unknown">
+                <span>●</span>
+                Room availability not checked
+              </div>
 
-              <span className="hotel-availability-unknown">
-                ● Room availability not checked
-              </span>
-
-
-              {/* DEMO BOOKING */}
+              {/* Demo Booking */}
 
               {hotel.bookingEnabled !== false ? (
-
                 <Link
                   to={bookingUrl}
                   className="hotel-book-button"
                 >
                   Continue to Demo Booking
+                  <span>→</span>
                 </Link>
-
               ) : (
-
                 <button
                   type="button"
                   className="hotel-book-button"
@@ -290,23 +305,16 @@ function HotelDetails() {
                 >
                   Booking Unavailable
                 </button>
-
               )}
 
               <p className="hotel-demo-notice">
-                This booking flow is a project
-                demonstration. It does not confirm
-                a reservation with the hotel.
+                This booking flow is a project demonstration.
+                It does not confirm a reservation with the hotel.
               </p>
-
             </div>
-
           </aside>
-
         </div>
-
       </section>
-
     </main>
   );
 }

@@ -1,9 +1,13 @@
+import { apiUrl } from "../config/api";
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,16 +25,16 @@ function Login() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/auth/login",
+        apiUrl("/api/auth/login"),
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             email,
-            password
-          })
+            password,
+          }),
         }
       );
 
@@ -40,12 +44,7 @@ function Login() {
         throw new Error(data.message || "Login failed.");
       }
 
-      localStorage.setItem("token", data.token);
-
-      localStorage.setItem(
-        "user",
-        JSON.stringify(data.user)
-      );
+      login(data.token, data.user);
 
       setSuccess("Login successful! Welcome back.");
 
@@ -55,9 +54,14 @@ function Login() {
       setTimeout(() => {
         navigate("/");
       }, 1000);
+
     } catch (error) {
       console.error(error);
-      setError(error.message || "Something went wrong. Please try again.");
+
+      setError(
+        error.message || "Something went wrong. Please try again."
+      );
+
     } finally {
       setLoading(false);
     }
@@ -97,6 +101,7 @@ function Login() {
 
               <div className="login-image-caption">
                 <span className="login-image-icon">✦</span>
+
                 <div>
                   <strong>Adventure awaits</strong>
                   <p>Find your next favourite destination</p>
@@ -127,7 +132,13 @@ function Login() {
           <div className="login-card">
             <Link to="/" className="login-brand">
               <span className="login-brand-icon">✦</span>
-              <span>Travel<span className="login-brand-accent">Explorer</span></span>
+
+              <span>
+                Travel
+                <span className="login-brand-accent">
+                  Explorer
+                </span>
+              </span>
             </Link>
 
             <div className="login-heading">
@@ -144,7 +155,9 @@ function Login() {
 
             <form onSubmit={handleSubmit}>
               <div className="login-form-group">
-                <label htmlFor="email">Email address</label>
+                <label htmlFor="email">
+                  Email address
+                </label>
 
                 <div className="login-input-wrapper">
                   <span className="login-input-icon" aria-hidden="true">
@@ -173,7 +186,9 @@ function Login() {
 
               <div className="login-form-group">
                 <div className="login-password-label">
-                  <label htmlFor="password">Password</label>
+                  <label htmlFor="password">
+                    Password
+                  </label>
                 </div>
 
                 <div className="login-input-wrapper">
@@ -210,10 +225,7 @@ function Login() {
               )}
 
               {success && (
-                <div
-                  className="login-message login-success"
-                  role="status"
-                >
+                <div className="login-message login-success" role="status">
                   <span aria-hidden="true">✓</span>
                   <p>{success}</p>
                 </div>
@@ -228,7 +240,11 @@ function Login() {
                   {loading ? "Signing you in..." : "Sign in"}
                 </span>
 
-                {!loading && <span className="login-button-arrow">→</span>}
+                {!loading && (
+                  <span className="login-button-arrow">
+                    →
+                  </span>
+                )}
               </button>
             </form>
 
@@ -238,7 +254,9 @@ function Login() {
 
             <p className="signup-link">
               Don't have an account?{" "}
-              <Link to="/signup">Create an account</Link>
+              <Link to="/signup">
+                Create an account
+              </Link>
             </p>
 
             <Link to="/" className="back-to-explore">

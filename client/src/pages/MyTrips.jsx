@@ -1,3 +1,4 @@
+import { apiUrl } from "../config/api";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./MyTrips.css";
@@ -42,16 +43,20 @@ function getSelectedHotel(trip) {
 }
 
 function getHotelPrice(hotel) {
-  return hotel?.price?.amount ??
+  return (
+    hotel?.price?.amount ??
     hotel?.price?.value ??
     hotel?.estimatedPrice ??
     hotel?.pricePerNight ??
-    null;
+    null
+  );
 }
 
 function formatTripDate(value) {
   if (!value) return "Not set";
+
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) return "Not set";
 
   return date.toLocaleDateString(undefined, {
@@ -63,6 +68,7 @@ function formatTripDate(value) {
 
 function MyTrips() {
   const [trips, setTrips] = useState([]);
+  const [tripBookings, setTripBookings] = useState({});
 
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
@@ -91,7 +97,7 @@ function MyTrips() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/trips",
+        apiUrl("/api/trips"),
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -107,7 +113,54 @@ function MyTrips() {
         );
       }
 
-      setTrips(data);
+      const loadedTrips = Array.isArray(data) ? data : [];
+      setTrips(loadedTrips);
+
+      // Fetch the user's bookings and associate confirmed bookings
+      // with their trips using booking.tripId.
+      try {
+        const bookingsResponse = await fetch(
+          apiUrl("/api/bookings"),
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+
+        const bookingsData = await bookingsResponse.json();
+
+        if (!bookingsResponse.ok) {
+          throw new Error(
+            bookingsData.message || "Unable to load bookings."
+          );
+        }
+
+        const bookingMap = {};
+
+        const userBookings = Array.isArray(bookingsData)
+          ? bookingsData
+          : [];
+
+        userBookings.forEach((booking) => {
+          const linkedTripId = booking.tripId
+            ? String(booking.tripId._id || booking.tripId)
+            : "";
+
+          if (
+            linkedTripId &&
+            booking.status === "confirmed" &&
+            !bookingMap[linkedTripId]
+          ) {
+            bookingMap[linkedTripId] = booking;
+          }
+        });
+
+        setTripBookings(bookingMap);
+      } catch (bookingError) {
+        console.error("Fetch trip bookings error:", bookingError);
+        setTripBookings({});
+      }
     } catch (error) {
       console.error(error);
       setError("Unable to load your trips.");
@@ -127,9 +180,7 @@ function MyTrips() {
     }
 
     if (!destination.trim()) {
-      setCreateError(
-        "Please enter a destination."
-      );
+      setCreateError("Please enter a destination.");
       return;
     }
 
@@ -145,15 +196,13 @@ function MyTrips() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/trips",
+        apiUrl("/api/trips"),
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`
           },
-
           body: JSON.stringify({
             title,
             destination,
@@ -183,7 +232,6 @@ function MyTrips() {
       setEndDate("");
       setNotes("");
 
-      // Scroll back to the trip list
       window.scrollTo({
         top: 0,
         behavior: "smooth"
@@ -200,7 +248,6 @@ function MyTrips() {
     return (
       <main className="trips-page-state">
         <div className="trips-spinner"></div>
-
         <p>Loading your adventures...</p>
       </main>
     );
@@ -229,6 +276,7 @@ function MyTrips() {
 
   return (
     <main className="my-trips-page">
+
       {/* Page hero */}
 
       <section className="trips-hero">
@@ -275,9 +323,7 @@ function MyTrips() {
 
           <span className="trip-count">
             {trips.length}{" "}
-            {trips.length === 1
-              ? "trip"
-              : "trips"}
+            {trips.length === 1 ? "trip" : "trips"}
           </span>
         </div>
 
@@ -306,220 +352,435 @@ function MyTrips() {
         ) : (
           <div className="trip-list">
             {trips.map((trip, index) => {
-              const lunchRestaurants = getSelectedLunchRestaurants(trip);
-              const attractionDays = getTripAttractions(trip);
-              const selectedHotel = getSelectedHotel(trip);
-              const hotelPrice = getHotelPrice(selectedHotel);
+              const lunchRestaurants =
+                getSelectedLunchRestaurants(trip);
+
+              const attractionDays =
+                getTripAttractions(trip);
+
+              const selectedHotel =
+                getSelectedHotel(trip);
+
+              const hotelPrice =
+                getHotelPrice(selectedHotel);
+
+              const confirmedBooking =
+                tripBookings[String(trip._id)] || null;
+
+              const displayedHotelName =
+                confirmedBooking?.hotelName ||
+                selectedHotel?.name ||
+                "Selected hotel";
 
               return (
-              <article
-                className="trip-card"
-                key={trip._id}
-              >
-                <div
-                  className={`trip-card-visual trip-visual-${index % 4}`}
+                <article
+                  className="trip-card"
+                  key={trip._id}
                 >
-                  <span className="trip-visual-icon">
-                    {index % 4 === 0
-                      ? "🌴"
-                      : index % 4 === 1
-                      ? "🏔️"
-                      : index % 4 === 2
-                      ? "🏖️"
-                      : "✈️"}
-                  </span>
+                  <div
+                    className={`trip-card-visual trip-visual-${index % 4}`}
+                  >
+                    <span className="trip-visual-icon">
+                      {index % 4 === 0
+                        ? "🌴"
+                        : index % 4 === 1
+                        ? "🏔️"
+                        : index % 4 === 2
+                        ? "🏖️"
+                        : "✈️"}
+                    </span>
 
-                  <span className="trip-number">
-                    TRIP{" "}
-                    {String(index + 1).padStart(
-                      2,
-                      "0"
-                    )}
-                  </span>
-                </div>
-
-                <div className="trip-card-content">
-                  <div className="trip-card-heading">
-                    <div>
-                      <h3>{trip.title}</h3>
-
-                      <p className="trip-destination">
-                        📍 {trip.destination}
-                      </p>
-                    </div>
-
-                    <span className="trip-status">
-                      Planned
+                    <span className="trip-number">
+                      TRIP{" "}
+                      {String(index + 1).padStart(2, "0")}
                     </span>
                   </div>
 
-                  {(trip.startDate ||
-                    trip.endDate) && (
-                    <div className="trip-date-box">
-                      <span>📅</span>
-
+                  <div className="trip-card-content">
+                    <div className="trip-card-heading">
                       <div>
-                        <small>
-                          TRAVEL DATES
-                        </small>
+                        <h3>{trip.title}</h3>
 
-                        <strong>
-                          {trip.startDate
-                            ? new Date(
-                                trip.startDate
-                              ).toLocaleDateString(
-                                undefined,
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric"
-                                }
-                              )
-                            : "Not set"}
-
-                          {" → "}
-
-                          {trip.endDate
-                            ? new Date(
-                                trip.endDate
-                              ).toLocaleDateString(
-                                undefined,
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric"
-                                }
-                              )
-                            : "Not set"}
-                        </strong>
-                      </div>
-                    </div>
-                  )}
-
-                  {trip.notes && (
-                    <p className="trip-notes">
-                      {trip.notes}
-                    </p>
-                  )}
-
-                  {attractionDays.length > 0 && (
-                    <section
-                      style={{
-                        marginTop: "16px",
-                        padding: "14px",
-                        border: "1px solid #dce8ed",
-                        borderRadius: "10px",
-                        background: "#f8fcfc"
-                      }}
-                    >
-                      <h4 style={{ margin: "0 0 10px", color: "#17324D" }}>
-                        📍 Selected Places
-                      </h4>
-                      {attractionDays.map((day) => (
-                        <div key={`${trip._id}-attractions-${day.day}`} style={{ marginBottom: "8px" }}>
-                          <strong style={{ display: "block", fontSize: "12px", color: "#526273", marginBottom: "5px" }}>
-                            DAY {day.day}{day.date ? ` · ${formatTripDate(day.date)}` : ""}
-                          </strong>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                            {day.places.map((place, placeIndex) => (
-                              <span key={`${place}-${placeIndex}`} style={{ padding: "5px 8px", borderRadius: "6px", background: "#fff", border: "1px solid #dce8ed", color: "#17324D", fontSize: "12px" }}>
-                                {place}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </section>
-                  )}
-
-                  {lunchRestaurants.length > 0 && (
-                    <section
-                      style={{
-                        marginTop: "14px",
-                        padding: "14px",
-                        border: "1px solid #cce9e2",
-                        borderRadius: "10px",
-                        background: "#f2fbf8"
-                      }}
-                    >
-                      <h4 style={{ margin: "0 0 10px", color: "#087f70" }}>
-                        🍽️ Selected Lunch Restaurants
-                      </h4>
-                      {lunchRestaurants.map((lunch) => {
-                        const restaurant = lunch.restaurant;
-                        const mapsUrl =
-                          restaurant.mapsUrl ||
-                          (restaurant.lat != null && restaurant.lon != null
-                            ? `https://www.google.com/maps/search/?api=1&query=${restaurant.lat},${restaurant.lon}`
-                            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.name || "restaurant")}`);
-
-                        return (
-                          <div key={`${trip._id}-lunch-${lunch.key}`} style={{ padding: "10px 0", borderTop: "1px solid #d8eee8" }}>
-                            <strong style={{ display: "block", color: "#17324D" }}>
-                              Day {lunch.day} · {restaurant.name || "Selected restaurant"}
-                            </strong>
-                            {(lunch.startTime || lunch.endTime) && (
-                              <span style={{ display: "block", marginTop: "4px", color: "#526273", fontSize: "12px" }}>
-                                {lunch.startTime || ""}{lunch.endTime ? ` – ${lunch.endTime}` : ""}
-                              </span>
-                            )}
-                            {restaurant.address && (
-                              <p style={{ margin: "5px 0", color: "#526273", fontSize: "13px" }}>
-                                {restaurant.address}
-                              </p>
-                            )}
-                            {restaurant.cuisine && (
-                              <p style={{ margin: "4px 0", color: "#526273", fontSize: "12px" }}>
-                                Cuisine: {restaurant.cuisine}
-                              </p>
-                            )}
-                            {restaurant.distance != null && (
-                              <p style={{ margin: "4px 0", color: "#526273", fontSize: "12px" }}>
-                                {Number(restaurant.distance).toFixed(2)} km from lunch location
-                              </p>
-                            )}
-                            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: "5px", color: "#087f70", fontSize: "13px", fontWeight: 700, textDecoration: "none" }}>
-                              View restaurant on Google Maps →
-                            </a>
-                          </div>
-                        );
-                      })}
-                    </section>
-                  )}
-
-                  {selectedHotel && (
-                    <section style={{ marginTop: "14px", padding: "14px", border: "1px solid #dce8ed", borderRadius: "10px", background: "#fff" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
-                        <h4 style={{ margin: 0, color: "#17324D" }}>🏨 Selected Hotel</h4>
-                        <span style={{ color: "#805b00", fontSize: "11px", fontWeight: 700 }}>SELECTED · NOT BOOKED</span>
-                      </div>
-                      <strong style={{ display: "block", marginTop: "8px", color: "#17324D" }}>
-                        {selectedHotel.name || "Selected hotel"}
-                      </strong>
-                      {selectedHotel.address && <p style={{ margin: "4px 0", color: "#526273", fontSize: "13px" }}>{selectedHotel.address}</p>}
-                      {hotelPrice != null && (
-                        <p style={{ margin: "5px 0 0", color: "#334155", fontSize: "13px", fontWeight: 600 }}>
-                          Estimated price: {selectedHotel.price?.currency || "INR"} {Number(hotelPrice).toLocaleString()} / night
+                        <p className="trip-destination">
+                          📍 {trip.destination}
                         </p>
-                      )}
-                    </section>
-                  )}
+                      </div>
 
-                  <div className="trip-card-footer">
-                    <span>
-                      Start planning →
-                    </span>
+                      <span className="trip-status">
+                        Planned
+                      </span>
+                    </div>
 
-                    <Link
-                      to={`/trips/${trip._id}`}
-                      className="open-trip-button"
-                    >
-                      Open Trip
-                      <span>→</span>
-                    </Link>
+                    {(trip.startDate || trip.endDate) && (
+                      <div className="trip-date-box">
+                        <span>📅</span>
+
+                        <div>
+                          <small>TRAVEL DATES</small>
+
+                          <strong>
+                            {trip.startDate
+                              ? formatTripDate(trip.startDate)
+                              : "Not set"}
+
+                            {" → "}
+
+                            {trip.endDate
+                              ? formatTripDate(trip.endDate)
+                              : "Not set"}
+                          </strong>
+                        </div>
+                      </div>
+                    )}
+
+                    {trip.notes && (
+                      <p className="trip-notes">
+                        {trip.notes}
+                      </p>
+                    )}
+
+                    {/* Selected attractions */}
+
+                    {attractionDays.length > 0 && (
+                      <section
+                        style={{
+                          marginTop: "16px",
+                          padding: "14px",
+                          border: "1px solid #dce8ed",
+                          borderRadius: "10px",
+                          background: "#f8fcfc"
+                        }}
+                      >
+                        <h4
+                          style={{
+                            margin: "0 0 10px",
+                            color: "#17324D"
+                          }}
+                        >
+                          📍 Selected Places
+                        </h4>
+
+                        {attractionDays.map((day) => (
+                          <div
+                            key={`${trip._id}-attractions-${day.day}`}
+                            style={{ marginBottom: "8px" }}
+                          >
+                            <strong
+                              style={{
+                                display: "block",
+                                fontSize: "12px",
+                                color: "#526273",
+                                marginBottom: "5px"
+                              }}
+                            >
+                              DAY {day.day}
+                              {day.date
+                                ? ` · ${formatTripDate(day.date)}`
+                                : ""}
+                            </strong>
+
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: "6px"
+                              }}
+                            >
+                              {day.places.map((place, placeIndex) => (
+                                <span
+                                  key={`${place}-${placeIndex}`}
+                                  style={{
+                                    padding: "5px 8px",
+                                    borderRadius: "6px",
+                                    background: "#fff",
+                                    border: "1px solid #dce8ed",
+                                    color: "#17324D",
+                                    fontSize: "12px"
+                                  }}
+                                >
+                                  {place}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </section>
+                    )}
+
+                    {/* Selected lunch restaurants */}
+
+                    {lunchRestaurants.length > 0 && (
+                      <section
+                        style={{
+                          marginTop: "14px",
+                          padding: "14px",
+                          border: "1px solid #cce9e2",
+                          borderRadius: "10px",
+                          background: "#f2fbf8"
+                        }}
+                      >
+                        <h4
+                          style={{
+                            margin: "0 0 10px",
+                            color: "#087f70"
+                          }}
+                        >
+                          🍽️ Selected Lunch Restaurants
+                        </h4>
+
+                        {lunchRestaurants.map((lunch) => {
+                          const restaurant = lunch.restaurant;
+
+                          const mapsUrl =
+                            restaurant.mapsUrl ||
+                            (restaurant.lat != null &&
+                            restaurant.lon != null
+                              ? `https://www.google.com/maps/search/?api=1&query=${restaurant.lat},${restaurant.lon}`
+                              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                  restaurant.name || "restaurant"
+                                )}`);
+
+                          return (
+                            <div
+                              key={`${trip._id}-lunch-${lunch.key}`}
+                              style={{
+                                padding: "10px 0",
+                                borderTop: "1px solid #d8eee8"
+                              }}
+                            >
+                              <strong
+                                style={{
+                                  display: "block",
+                                  color: "#17324D"
+                                }}
+                              >
+                                Day {lunch.day} ·{" "}
+                                {restaurant.name || "Selected restaurant"}
+                              </strong>
+
+                              {(lunch.startTime || lunch.endTime) && (
+                                <span
+                                  style={{
+                                    display: "block",
+                                    marginTop: "4px",
+                                    color: "#526273",
+                                    fontSize: "12px"
+                                  }}
+                                >
+                                  {lunch.startTime || ""}
+                                  {lunch.endTime
+                                    ? ` – ${lunch.endTime}`
+                                    : ""}
+                                </span>
+                              )}
+
+                              {restaurant.address && (
+                                <p
+                                  style={{
+                                    margin: "5px 0",
+                                    color: "#526273",
+                                    fontSize: "13px"
+                                  }}
+                                >
+                                  {restaurant.address}
+                                </p>
+                              )}
+
+                              {restaurant.cuisine && (
+                                <p
+                                  style={{
+                                    margin: "4px 0",
+                                    color: "#526273",
+                                    fontSize: "12px"
+                                  }}
+                                >
+                                  Cuisine: {restaurant.cuisine}
+                                </p>
+                              )}
+
+                              {restaurant.distance != null && (
+                                <p
+                                  style={{
+                                    margin: "4px 0",
+                                    color: "#526273",
+                                    fontSize: "12px"
+                                  }}
+                                >
+                                  {Number(restaurant.distance).toFixed(2)} km
+                                  from lunch location
+                                </p>
+                              )}
+
+                              <a
+                                href={mapsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: "inline-block",
+                                  marginTop: "5px",
+                                  color: "#087f70",
+                                  fontSize: "13px",
+                                  fontWeight: 700,
+                                  textDecoration: "none"
+                                }}
+                              >
+                                View restaurant on Google Maps →
+                              </a>
+                            </div>
+                          );
+                        })}
+                      </section>
+                    )}
+
+                    {/* Selected / booked hotel */}
+
+                    {(selectedHotel || confirmedBooking) && (
+                      <section
+                        style={{
+                          marginTop: "14px",
+                          padding: "14px",
+                          border: confirmedBooking
+                            ? "1px solid #c9dfcf"
+                            : "1px solid #e5e1d8",
+                          borderRadius: "10px",
+                          background: confirmedBooking
+                            ? "#f2f8f2"
+                            : "#fffefa"
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: "8px",
+                            flexWrap: "wrap",
+                            alignItems: "center"
+                          }}
+                        >
+                          <h4
+                            style={{
+                              margin: 0,
+                              color: "#244c3e"
+                            }}
+                          >
+                            🏨{" "}
+                            {confirmedBooking
+                              ? "Booked Hotel"
+                              : "Selected Hotel"}
+                          </h4>
+
+                          <span
+                            style={{
+                              color: confirmedBooking
+                                ? "#24623b"
+                                : "#805b00",
+                              background: confirmedBooking
+                                ? "#e2f1e5"
+                                : "#fff4d6",
+                              padding: "5px 9px",
+                              borderRadius: "20px",
+                              fontSize: "11px",
+                              fontWeight: 700
+                            }}
+                          >
+                            {confirmedBooking
+                              ? "✓ BOOKED"
+                              : "SELECTED · NOT BOOKED"}
+                          </span>
+                        </div>
+
+                        <strong
+                          style={{
+                            display: "block",
+                            marginTop: "8px",
+                            color: "#244c3e"
+                          }}
+                        >
+                          {displayedHotelName}
+                        </strong>
+
+                        {(confirmedBooking?.checkIn ||
+                          confirmedBooking?.checkOut) && (
+                          <p
+                            style={{
+                              margin: "5px 0",
+                              color: "#526273",
+                              fontSize: "13px"
+                            }}
+                          >
+                            {formatTripDate(confirmedBooking.checkIn)}
+                            {" – "}
+                            {formatTripDate(confirmedBooking.checkOut)}
+                          </p>
+                        )}
+
+                        {!confirmedBooking && selectedHotel?.address && (
+                          <p
+                            style={{
+                              margin: "4px 0",
+                              color: "#526273",
+                              fontSize: "13px"
+                            }}
+                          >
+                            {selectedHotel.address}
+                          </p>
+                        )}
+
+                        {confirmedBooking ? (
+                          <p
+                            style={{
+                              margin: "5px 0 0",
+                              color: "#24623b",
+                              fontSize: "13px",
+                              fontWeight: 600
+                            }}
+                          >
+                            Booking reference: {confirmedBooking._id}
+                          </p>
+                        ) : hotelPrice != null ? (
+                          <p
+                            style={{
+                              margin: "5px 0 0",
+                              color: "#334155",
+                              fontSize: "13px",
+                              fontWeight: 600
+                            }}
+                          >
+                            Estimated price:{" "}
+                            {selectedHotel.price?.currency || "INR"}{" "}
+                            {Number(hotelPrice).toLocaleString()} / night
+                          </p>
+                        ) : null}
+
+                        {!confirmedBooking &&
+                          (selectedHotel.id || selectedHotel._id) && (
+                            <Link
+                              to={`/hotels/${
+                                selectedHotel.id || selectedHotel._id
+                              }/book?tripId=${trip._id}`}
+                              className="booking-hotel-button"
+                            >
+                              Book This Hotel →
+                            </Link>
+                          )}
+                      </section>
+                    )}
+
+                    <div className="trip-card-footer">
+                      <span>
+                        Start planning →
+                      </span>
+
+                      <Link
+                        to={`/trips/${trip._id}`}
+                        className="open-trip-button"
+                      >
+                        Open Trip
+                        <span>→</span>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </article>
+                </article>
               );
             })}
           </div>
@@ -584,9 +845,7 @@ function MyTrips() {
                 placeholder="e.g. Goa, India"
                 value={destination}
                 onChange={(event) =>
-                  setDestination(
-                    event.target.value
-                  )
+                  setDestination(event.target.value)
                 }
               />
             </div>
@@ -603,9 +862,7 @@ function MyTrips() {
                 type="date"
                 value={startDate}
                 onChange={(event) =>
-                  setStartDate(
-                    event.target.value
-                  )
+                  setStartDate(event.target.value)
                 }
               />
             </div>
@@ -620,9 +877,7 @@ function MyTrips() {
                 type="date"
                 value={endDate}
                 onChange={(event) =>
-                  setEndDate(
-                    event.target.value
-                  )
+                  setEndDate(event.target.value)
                 }
               />
             </div>

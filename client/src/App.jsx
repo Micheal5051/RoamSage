@@ -1,9 +1,15 @@
+﻿import { apiUrl } from "./config/api";
 
 import { useEffect, useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 
-import DestinationCard from "./components/DestinationCard";
+import Navbar from "./components/Navbar";
+import RegionCards from "./components/RegionCards";
+import UniversalSearch from "./components/UniversalSearch";
+
 import DestinationDetails from "./pages/DestinationDetails";
+import ExploreDestinations from "./pages/ExploreDestinations";
+import AttractionDetails from "./pages/AttractionDetails";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import MyTrips from "./pages/MyTrips";
@@ -14,154 +20,161 @@ import Booking from "./pages/Booking";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./pages/MyBookings";
 import ItineraryGenerator from "./pages/ItineraryGenerator";
+import AIChat from "./pages/AIChat";
+import Profile from "./pages/Profile";
+import Recommendations from "./pages/Recommendations";
 
-import Navbar from "./components/Navbar";
+import { AuthProvider } from "./context/AuthContext";
 
 import "./App.css";
 
 function Home() {
+  const navigate = useNavigate();
   const [destinations, setDestinations] = useState([]);
-  const [search, setSearch] = useState("");
-  const [selectedTag, setSelectedTag] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/destinations")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch destinations");
-        }
+    const controller = new AbortController();
 
-        return response.json();
-      })
-      .then((data) => {
-        setDestinations(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error(error);
-        setError("Unable to load destinations.");
-        setLoading(false);
-      });
-  }, []);
-
-  const filteredDestinations = destinations.filter(
-    (destination) => {
-      const searchText = search.toLowerCase().trim();
-
-      const matchesSearch =
-        destination.name?.toLowerCase().includes(searchText) ||
-        destination.country?.toLowerCase().includes(searchText) ||
-        destination.description?.toLowerCase().includes(searchText) ||
-        destination.tags?.some((tag) =>
-          tag.toLowerCase().includes(searchText)
+    const fetchDestinations = async () => {
+      try {
+        const response = await fetch(
+          apiUrl("/api/destinations"),
+          { signal: controller.signal }
         );
 
-      const matchesTag =
-        selectedTag === "all" ||
-        destination.tags?.includes(selectedTag);
+        if (!response.ok) {
+          throw new Error("Failed to load destinations");
+        }
 
-      return matchesSearch && matchesTag;
-    }
-  );
+        const data = await response.json();
+        setDestinations(Array.isArray(data) ? data : []);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Destination fetch error:", error);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchDestinations();
+
+    return () => controller.abort();
+  }, []);
+
+  const handleRegionDestinationSelect = (destination) => {
+    if (!destination?.trim()) return;
+
+    navigate(`/explore/${encodeURIComponent(destination.trim())}`);
+  };
 
   return (
-    <>
-      <header className="header">
-        <h1>Travel Companion 🌍</h1>
-        <p>Discover places. Plan trips. Explore more.</p>
-      </header>
+    <main>
+      <section className="hero-section">
+        <div className="hero-overlay">
+          <div className="hero-content">
+            <span className="hero-eyebrow">
+              YOUR NEXT ADVENTURE STARTS HERE
+            </span>
 
-      <main>
-        <h2>Explore Destinations</h2>
+            <h1>
+              EXPLORE
+              <br />
+              THE WORLD.
+            </h1>
 
-        <input
-          className="search-box"
-          type="text"
-          placeholder="Search destinations, countries, or interests..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-
-        <div className="filter-buttons">
-          <button
-            className={selectedTag === "all" ? "active" : ""}
-            onClick={() => setSelectedTag("all")}
-          >
-            All
-          </button>
-
-          <button
-            className={selectedTag === "beaches" ? "active" : ""}
-            onClick={() => setSelectedTag("beaches")}
-          >
-            Beaches
-          </button>
-
-          <button
-            className={selectedTag === "food" ? "active" : ""}
-            onClick={() => setSelectedTag("food")}
-          >
-            Food
-          </button>
-
-          <button
-            className={selectedTag === "culture" ? "active" : ""}
-            onClick={() => setSelectedTag("culture")}
-          >
-            Culture
-          </button>
-
-          <button
-            className={selectedTag === "history" ? "active" : ""}
-            onClick={() => setSelectedTag("history")}
-          >
-            History
-          </button>
-        </div>
-
-        {loading && <p>Loading destinations...</p>}
-
-        {error && <p>{error}</p>}
-
-        {!loading && !error && (
-          <>
             <p>
-              Showing {filteredDestinations.length} destination
-              {filteredDestinations.length !== 1 ? "s" : ""}
+              Discover extraordinary places and create unforgettable
+              travel experiences.
             </p>
 
-            <div className="destination-list">
-              {filteredDestinations.map((destination) => (
-                <DestinationCard
-                  key={destination._id}
-                  destination={destination}
-                />
-              ))}
-            </div>
+            <UniversalSearch
+              destinations={destinations}
+              onDestinationSelect={handleRegionDestinationSelect}
+            />
 
-            {filteredDestinations.length === 0 && (
-              <p>No destinations found.</p>
+            {!loading && destinations.length === 0 && (
+              <p className="search-error">
+                Destinations are temporarily unavailable.
+              </p>
             )}
-          </>
-        )}
-      </main>
-    </>
+          </div>
+        </div>
+      </section>
+
+      <section className="intro-section">
+        <div className="intro-content">
+          <span className="section-eyebrow">
+            TRAVEL BEYOND THE ORDINARY
+          </span>
+
+          <h2>Not just places. Experiences.</h2>
+
+          <p>
+            Every destination has a story waiting to be discovered.
+            Find the places that inspire you, explore new cultures,
+            and make memories that last a lifetime.
+          </p>
+        </div>
+      </section>
+
+      <RegionCards
+        onDestinationSelect={handleRegionDestinationSelect}
+      />
+
+      <section className="closing-section">
+        <div className="closing-content">
+          <span className="section-eyebrow">
+            THE WORLD IS WAITING
+          </span>
+
+          <h2>Your journey begins with a destination.</h2>
+
+          <p>
+            Find your next escape and let every journey become
+            a story worth remembering.
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              document
+                .getElementById("regions")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+          >
+            Explore regions â†—
+          </button>
+        </div>
+      </section>
+    </main>
   );
 }
 
-function App() {
+function AppContent() {
   return (
-    <div className="app">
+    <>
       <Navbar />
 
       <Routes>
         <Route path="/" element={<Home />} />
 
         <Route
+          path="/explore/:place"
+          element={<ExploreDestinations />}
+        />
+
+        <Route
           path="/destinations/:id"
           element={<DestinationDetails />}
+        />
+
+        <Route
+          path="/activities/:id"
+          element={<AttractionDetails />}
         />
 
         <Route path="/login" element={<Login />} />
@@ -187,6 +200,8 @@ function App() {
           element={<Booking />}
         />
 
+        <Route path="/profile" element={<Profile />} />
+
         <Route
           path="/bookings/:id"
           element={<BookingConfirmation />}
@@ -201,9 +216,28 @@ function App() {
           path="/itinerary"
           element={<ItineraryGenerator />}
         />
+
+        <Route
+          path="/recommendations"
+          element={<Recommendations />}
+        />
+
+        <Route
+          path="/ai-assistant"
+          element={<AIChat />}
+        />
       </Routes>
-    </div>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
 export default App;
+

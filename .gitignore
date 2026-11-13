@@ -17,3 +17,32 @@ build/
 .vscode/
 .DS_Store
 Thumbs.db
+# Python virtual environment
+venv/
+ai-service/venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment files
+.env
+.env.*
+# AI-generated vector database
+ai-service/chroma_db/
+
+# Backup files
+*backup*
+*.bak
+
+# Python virtual environments and cache
+ai-service/venv/
+ai-service/__pycache__/
+# Generated diagnostic report
+ai-service/rag_duplicate_report.json
+# Allow safe environment templates
+!.env.example
+
+# Generated diagnostic reports
+server/data/coordinate-geocoding-report.json
+server/destination-image-report.json

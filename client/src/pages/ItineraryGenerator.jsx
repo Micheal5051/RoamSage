@@ -1,13 +1,16 @@
+import { apiUrl } from "../config/api";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ItineraryGenerator.css";
 
-const API_URL = "http://localhost:5000/api/itinerary/generate";
-const SAVE_API_URL = "http://localhost:5000/api/trips/save-generated";
-const FOOD_API_URL = "http://localhost:5000/api/food/nearby";
+const API_URL = apiUrl("/api/itinerary/generate");
+const SAVE_API_URL = apiUrl("/api/trips/save-generated");
+const TRIPS_API_URL = apiUrl("/api/trips");
+const TRIP_BOOKING_API_URL = apiUrl("/api/bookings/trip");
+const FOOD_API_URL = apiUrl("/api/food/nearby");
 const MAX_FOOD_RESULTS = 15;
-const HOTELS_API_URL = "http://localhost:5000/api/hotels";
+const HOTELS_API_URL = apiUrl("/api/hotels");
 const HOTEL_SEARCH_RADIUS_KM = 5;
 
 // Coordinates match the attraction records in server/data/attractions.js.
@@ -846,6 +849,10 @@ function ItineraryGenerator() {
   const navigate = useNavigate();
 
   const [destination, setDestination] = useState("Hyderabad");
+  const [destinationSearch, setDestinationSearch] = useState("Hyderabad");
+  const [destinations, setDestinations] = useState([]);
+  const [destinationsLoading, setDestinationsLoading] = useState(true);
+  const [destinationsError, setDestinationsError] = useState("");
 
   const [startDate, setStartDate] = useState(
     getLocalDateString(new Date())
@@ -859,6 +866,10 @@ function ItineraryGenerator() {
     "history",
     "architecture"
   ]);
+  const [attractionOptions, setAttractionOptions] = useState([]);
+  const [selectedAttractionIds, setSelectedAttractionIds] = useState([]);
+  const [attractionsLoading, setAttractionsLoading] = useState(false);
+  const [attractionsError, setAttractionsError] = useState("");
 
   const [journeyPlan, setJourneyPlan] = useState({
     outbound: {
@@ -876,6 +887,11 @@ function ItineraryGenerator() {
   const [error, setError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [savedTripId, setSavedTripId] = useState(null);
+  const [myTrips, setMyTrips] = useState([]);
+  const [selectedTripId, setSelectedTripId] = useState("");
+  const [tripsLoading, setTripsLoading] = useState(false);
+  const [tripBooking, setTripBooking] = useState(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [nearbyHotels, setNearbyHotels] = useState([]);
   const [hotelsLoading, setHotelsLoading] = useState(false);
   const [hotelError, setHotelError] = useState("");
@@ -883,11 +899,188 @@ function ItineraryGenerator() {
   const [travelLoading, setTravelLoading] = useState(false);
   const [travelError, setTravelError] = useState("");
 
+  // Load selectable attractions from the same itinerary API.
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAttractionOptions() {
+      if (!destination.trim()) return;
+      setAttractionsLoading(true);
+      setAttractionsError("");
+      setSelectedAttractionIds([]);
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(localStorage.getItem("token") ? { Authorization: `Bearer ${localStorage.getItem("token")}` } : {})
+          },
+          body: JSON.stringify({
+            destination: destination.trim(),
+            startDate,
+            endDate,
+            interests,
+            previewOnly: true
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Unable to load attractions.");
+        if (!cancelled) {
+          const options = Array.isArray(data.availableAttractions) ? data.availableAttractions : [];
+          setAttractionOptions(options);
+          setSelectedAttractionIds(options.map(item => String(item.id)));
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setAttractionOptions([]);
+          setAttractionsError(loadError.message || "Unable to load attractions.");
+        }
+      } finally {
+        if (!cancelled) setAttractionsLoading(false);
+      }
+    }
+    loadAttractionOptions();
+    return () => { cancelled = true; };
+  }, [destination]);
+
+  // Load destinations from the existing backend API for autocomplete.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDestinations() {
+      setDestinationsLoading(true);
+      setDestinationsError("");
+
+      try {
+        const response = await fetch(apiUrl("/api/destinations"));
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Unable to load destinations.");
+        }
+
+        // Support either a direct array or a { destinations: [...] } response.
+        const destinationList = Array.isArray(data)
+          ? data
+          : Array.isArray(data.destinations)
+            ? data.destinations
+            : [];
+
+        if (!Array.isArray(destinationList)) {
+          throw new Error("The destination service returned an invalid response.");
+        }
+
+        const uniqueDestinations = Array.from(
+          new Map(
+            destinationList
+              .filter((item) => item && typeof item.name === "string" && item.name.trim())
+              .map((item) => [item.name.trim().toLowerCase(), item])
+          ).values()
+        ).sort((a, b) => a.name.localeCompare(b.name));
+
+        if (!cancelled) {
+          setDestinations(uniqueDestinations);
+        }
+      } catch (loadError) {
+        console.error("Destination loading error:", loadError);
+        if (!cancelled) {
+          setDestinationsError(loadError.message || "Unable to load destinations.");
+        }
+      } finally {
+        if (!cancelled) setDestinationsLoading(false);
+      }
+    }
+
+    loadDestinations();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load existing trips so an itinerary can be attached to one.
+  useEffect(() => {
+    async function loadMyTrips() {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      setTripsLoading(true);
+      try {
+        const response = await fetch(TRIPS_API_URL, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Unable to load your trips.");
+        setMyTrips(Array.isArray(data) ? data : []);
+      } catch (loadError) {
+        console.error("Load trips error:", loadError);
+        setError(loadError.message || "Unable to load your trips.");
+      } finally {
+        setTripsLoading(false);
+      }
+    }
+
+    loadMyTrips();
+  }, []);
+
+  async function handleExistingTripChange(nextTripId) {
+    setSelectedTripId(nextTripId);
+    setTripBooking(null);
+    setSelectedHotel(null);
+    setItinerary(null);
+    setSavedTripId(null);
+    setSaveMessage("");
+    setError("");
+
+    if (!nextTripId) return;
+
+    const trip = myTrips.find((item) => item._id === nextTripId);
+    if (!trip) return;
+
+    const tripStart = new Date(trip.startDate);
+    const tripEnd = new Date(trip.endDate);
+    setDestination(trip.destination || "Hyderabad");
+    setDestinationSearch(trip.destination || "Hyderabad");
+    setStartDate(getLocalDateString(tripStart));
+    setEndDate(getLocalDateString(tripEnd));
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    setBookingLoading(true);
+    try {
+      const response = await fetch(
+        `${TRIP_BOOKING_API_URL}/${encodeURIComponent(nextTripId)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to load the trip's booking.");
+
+      if (data.booking?.status === "confirmed" && data.hotel?.location) {
+        const bookedHotel = {
+          ...data.hotel,
+          bookingId: data.booking._id,
+          bookingStatus: data.booking.status,
+          checkIn: data.booking.checkIn,
+          checkOut: data.booking.checkOut,
+          isConfirmedBooking: true
+        };
+        setTripBooking(data.booking);
+        setSelectedHotel(bookedHotel);
+      } else {
+        setTripBooking(null);
+      }
+    } catch (bookingError) {
+      console.error("Load trip booking error:", bookingError);
+      setError(bookingError.message || "Unable to load the confirmed hotel booking.");
+    } finally {
+      setBookingLoading(false);
+    }
+  }
+
   // ==========================================
   // LOAD HOTELS NEAR PLANNED ATTRACTIONS
   // ==========================================
 
-  async function loadHotelsForItinerary(generatedItinerary) {
+  async function loadHotelsForItinerary(generatedItinerary, preserveSelectedHotel = false) {
     const plannedAttractions = (
       generatedItinerary?.days || []
     )
@@ -911,7 +1104,7 @@ function ItineraryGenerator() {
     );
 
     setNearbyHotels([]);
-    setSelectedHotel(null);
+    if (!preserveSelectedHotel) setSelectedHotel(null);
     setHotelError("");
 
     if (uniqueAttractions.length === 0) {
@@ -1128,7 +1321,7 @@ function ItineraryGenerator() {
     setSavedTripId(null);
     setItinerary(null);
     setNearbyHotels([]);
-    setSelectedHotel(null);
+    if (!tripBooking) setSelectedHotel(null);
     setHotelError("");
     setTravelLoading(false);
     setTravelError("");
@@ -1140,6 +1333,11 @@ function ItineraryGenerator() {
 
     if (!startDate || !endDate || endDate < startDate) {
       setError("Please select valid travel dates.");
+      return;
+    }
+
+    if (!selectedAttractionIds.length) {
+      setError("Please select at least one attraction.");
       return;
     }
 
@@ -1167,7 +1365,8 @@ function ItineraryGenerator() {
           destination: destination.trim(),
           startDate,
           endDate,
-          interests
+          interests,
+          selectedAttractionIds
         })
       });
 
@@ -1191,14 +1390,14 @@ function ItineraryGenerator() {
 
       try {
         const itineraryWithRoutes =
-          await attachTravelEstimates(data, null);
+          await attachTravelEstimates(data, tripBooking && selectedHotel?.isConfirmedBooking ? selectedHotel : null);
 
         setItinerary(itineraryWithRoutes);
       } finally {
         setTravelLoading(false);
       }
 
-      await loadHotelsForItinerary(data);
+      await loadHotelsForItinerary(data, Boolean(tripBooking && selectedHotel?.isConfirmedBooking));
     } catch (requestError) {
       setError(
         requestError.message ||
@@ -1244,6 +1443,7 @@ function ItineraryGenerator() {
         },
 
         body: JSON.stringify({
+          ...(selectedTripId ? { tripId: selectedTripId } : {}),
           destination: itinerary.destination,
           startDate: itinerary.startDate,
           endDate: itinerary.endDate,
@@ -1337,9 +1537,17 @@ function ItineraryGenerator() {
       }
 
       setSavedTripId(data.trip._id);
+      setMyTrips((current) => {
+        const exists = current.some((trip) => trip._id === data.trip._id);
+        return exists
+          ? current.map((trip) => trip._id === data.trip._id ? data.trip : trip)
+          : [data.trip, ...current];
+      });
 
       setSaveMessage(
-        "Your itinerary has been saved to My Trips."
+        selectedTripId
+          ? "Your itinerary has been updated in the selected trip."
+          : "Your itinerary has been saved to a new trip in My Trips."
       );
     } catch (saveError) {
       console.error(
@@ -1381,21 +1589,71 @@ function ItineraryGenerator() {
         <form onSubmit={handleSubmit}>
           <div className="itinerary-form-grid">
             <div className="itinerary-field">
+              <label htmlFor="existing-trip-select">Use an existing trip (optional)</label>
+              <select
+                id="existing-trip-select"
+                value={selectedTripId}
+                onChange={(event) => handleExistingTripChange(event.target.value)}
+                disabled={tripsLoading || loading || saving}
+              >
+                <option value="">Create a new trip instead</option>
+                {myTrips.map((trip) => (
+                  <option key={trip._id} value={trip._id}>
+                    {trip.title || trip.destination} — {trip.destination}
+                  </option>
+                ))}
+              </select>
+              <small>
+                {tripsLoading ? "Loading your trips..." : "Select a trip to use its destination and dates, and to attach the generated plan to it."}
+              </small>
+            </div>
+            <div className="itinerary-field">
               <label htmlFor="itinerary-destination">
                 Destination
               </label>
 
-              <select
+              <input
                 id="itinerary-destination"
-                value={destination}
-                onChange={(event) =>
-                  setDestination(event.target.value)
+                type="text"
+                list="itinerary-destination-options"
+                value={destinationSearch}
+                placeholder={
+                  destinationsLoading
+                    ? "Loading destinations..."
+                    : "Search a city or destination..."
                 }
-              >
-                <option value="Hyderabad">
-                  Hyderabad
-                </option>
-              </select>
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setDestinationSearch(value);
+                  setDestination(value);
+                  setItinerary(null);
+                  setSavedTripId(null);
+                  setSaveMessage("");
+                  setError("");
+                }}
+                autoComplete="off"
+                required
+                aria-describedby="itinerary-destination-help"
+              />
+
+              <datalist id="itinerary-destination-options">
+                {destinations.map((item, index) => (
+                  <option
+                    key={item._id || item.id || `${item.name}-${index}`}
+                    value={item.name}
+                  >
+                    {item.country || item.state || ""}
+                  </option>
+                ))}
+              </datalist>
+
+              <small id="itinerary-destination-help">
+                {destinationsLoading
+                  ? "Loading destinations..."
+                  : destinationsError
+                    ? `${destinationsError} You can still enter a destination manually.`
+                    : `${destinations.length} destinations available. Start typing to see suggestions.`}
+              </small>
             </div>
 
             <div className="itinerary-field">
@@ -1437,6 +1695,41 @@ function ItineraryGenerator() {
               />
             </div>
           </div>
+
+          <fieldset className="itinerary-interests">
+            <legend>Choose the attractions you want to visit</legend>
+            <p>Select only the places you are interested in. Travel Explorer will estimate the days needed based on visit duration and distances.</p>
+            {attractionsLoading ? (
+              <p role="status">Loading attractions for {destination}...</p>
+            ) : attractionsError ? (
+              <p role="alert">{attractionsError}</p>
+            ) : attractionOptions.length === 0 ? (
+              <p>No attraction list is available for this destination yet.</p>
+            ) : (
+              <>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "12px" }}>
+                  <button type="button" onClick={() => setSelectedAttractionIds(attractionOptions.map(item => String(item.id)))}>Select all</button>
+                  <button type="button" onClick={() => setSelectedAttractionIds([])}>Clear selection</button>
+                </div>
+                <div className="itinerary-interest-options">
+                  {attractionOptions.map(place => (
+                    <label className="itinerary-interest-option" key={place.id}>
+                      <input
+                        type="checkbox"
+                        checked={selectedAttractionIds.includes(String(place.id))}
+                        onChange={() => setSelectedAttractionIds(current => current.includes(String(place.id)) ? current.filter(id => id !== String(place.id)) : [...current, String(place.id)])}
+                      />
+                      <span>
+                        <strong>{place.name}</strong>
+                        <small style={{ display: "block" }}>{place.category} · {place.estimatedVisitMinutes} min{place.hasCoordinates ? " · location available" : " · location missing"}</small>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p style={{ fontSize: "13px", marginBottom: 0 }}>{selectedAttractionIds.length} of {attractionOptions.length} attractions selected.</p>
+              </>
+            )}
+          </fieldset>
 
           <fieldset className="itinerary-interests">
             <legend>Arrival and return details</legend>
@@ -1556,7 +1849,7 @@ function ItineraryGenerator() {
           <button
             className="itinerary-generate-button"
             type="submit"
-            disabled={loading || saving}
+            disabled={loading || saving || bookingLoading}
           >
             {loading
               ? "Generating itinerary..."
@@ -1564,6 +1857,29 @@ function ItineraryGenerator() {
           </button>
         </form>
       </section>
+
+      {selectedTripId && (
+        <section
+          style={{ margin: "16px 0", padding: "14px 18px", border: "1px solid #cbd5e1", borderRadius: "10px", background: "#f8fafc" }}
+        >
+          {bookingLoading ? (
+            <p role="status">Checking for a confirmed hotel booking...</p>
+          ) : selectedHotel?.isConfirmedBooking ? (
+            <>
+              <strong>Confirmed hotel linked to this trip</strong>
+              <p style={{ marginBottom: 4 }}>{selectedHotel.name}</p>
+              <p style={{ margin: 0, fontSize: 13, color: "#52616b" }}>
+                {selectedHotel.address} · Check-in: {formatDate(String(selectedHotel.checkIn).slice(0, 10))} · Check-out: {formatDate(String(selectedHotel.checkOut).slice(0, 10))}
+              </p>
+              <p style={{ marginBottom: 0, fontSize: 13, color: "#176b52" }}>
+                This confirmed booking will be used as the starting point for daily driving estimates.
+              </p>
+            </>
+          ) : (
+            <p style={{ margin: 0 }}>No confirmed hotel booking is linked to this trip. You can still choose one of the hotel recommendations below.</p>
+          )}
+        </section>
+      )}
 
       {loading && (
         <div className="itinerary-loading" role="status">
@@ -1626,8 +1942,9 @@ function ItineraryGenerator() {
             </h2>
 
             <p style={{ color: "#52616b" }}>
-              Choose accommodation close to the attractions in your travel itinerary.
-              We use your selected hotel as the starting point for the first attraction each day.
+              {selectedHotel?.isConfirmedBooking
+                ? "Your confirmed booked hotel is used as the starting point for the first attraction each day. Hotel recommendations remain visible for reference, but cannot replace the confirmed booking here."
+                : "Choose accommodation close to the attractions in your travel itinerary. We use your selected hotel as the starting point for the first attraction each day."}
             </p>
 
             {hotelsLoading && (
@@ -1765,6 +2082,19 @@ function ItineraryGenerator() {
                 will be saved with your trip.
               </p>
             )}
+            {selectedHotel && getHotelPrice(selectedHotel) !== null && (
+              <div
+                className="itinerary-notice"
+                style={{ marginTop: "14px", marginBottom: "14px" }}
+                aria-live="polite"
+              >
+                <strong>Estimated stay cost</strong>
+                <p>
+                  {formatHotelPrice(selectedHotel)} × {Math.max(1, Math.round((Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86400000))} nights = {new Intl.NumberFormat("en-IN", { style: "currency", currency: selectedHotel?.price?.currency || "INR", maximumFractionDigits: 0 }).format(getHotelPrice(selectedHotel) * Math.max(1, Math.round((Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86400000)))} estimated.
+                </p>
+                <p>Hotel estimate only. Restaurant, transport and activity costs are not included because verified prices are not available for every item.</p>
+              </div>
+            )}
 
             {travelLoading && (
               <p
@@ -1807,6 +2137,23 @@ function ItineraryGenerator() {
 
           {/* DAILY ITINERARY */}
 
+          {Number.isFinite(itinerary.recommendedDays) && (
+            <div className="itinerary-notice" role="status">
+              <strong>
+                Your trip: {Math.round((Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86400000) + 1} days · Sightseeing planned: {itinerary.recommendedDays} {itinerary.recommendedDays === 1 ? "day" : "days"}
+              </strong>
+              <p>
+                We scheduled {itinerary.scheduledAttractionCount} of {itinerary.selectedAttractionCount} available selected attractions.
+                {itinerary.tripDurationMessage || (
+                  itinerary.recommendedDays < (Math.round((Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86400000) + 1)
+                    ? " Some days are intentionally flexible for rest, shopping or independent exploration."
+                    : " Your selected attractions are distributed across the trip dates."
+                )}
+                {` ${itinerary.travelEstimateNote || ""}`}
+              </p>
+            </div>
+          )}
+
           {itinerary.days.map((day) => {
             const attractions = day.schedule.filter(
               (item) => item.type === "attraction"
@@ -1826,7 +2173,7 @@ function ItineraryGenerator() {
                 <header className="itinerary-day-header">
                   <div>
                     <span className="itinerary-day-label">
-                      DAY {day.day}
+                      {day.isRestDay ? `DAY ${day.day} · FLEXIBLE` : `DAY ${day.day}`}
                     </span>
 
                     <h3>{formatDate(day.date)}</h3>
@@ -1842,9 +2189,14 @@ function ItineraryGenerator() {
                 </header>
 
                 {day.schedule.length === 0 ? (
-                  <p className="itinerary-empty-day">
-                    No attractions could be scheduled for this day.
-                  </p>
+                  <div className="itinerary-empty-day">
+                    <strong>{day.isFlexibleDay ? "Your day, your pace" : "A day to explore at your own pace"}</strong>
+                    <span>
+                      {Array.isArray(day.flexibleDayIdeas) && day.flexibleDayIdeas.length
+                        ? day.flexibleDayIdeas.join(" · ")
+                        : "Your selected attractions fit into the other travel days. Keep this day flexible for rest, shopping, local discoveries or an optional day trip."}
+                    </span>
+                  </div>
                 ) : (
                   <div className="itinerary-timeline">
                     {day.schedule.map((item, index) => (
@@ -2077,18 +2429,8 @@ function ItineraryGenerator() {
 
           {/* SAVE TO MY TRIPS */}
 
-          <section
-            style={{
-              marginTop: "24px",
-              padding: "20px",
-              borderRadius: "12px",
-              background: "#10283A",
-              color: "#fff"
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>
-              Keep this travel plan
-            </h3>
+          <section className="itinerary-save-card">
+            <h3>Keep this travel plan</h3>
 
             <p>
               Save your generated itinerary to your account so you can
@@ -2096,6 +2438,7 @@ function ItineraryGenerator() {
             </p>
 
             <button
+              className="itinerary-save-button"
               type="button"
               onClick={handleSaveToMyTrips}
               disabled={
@@ -2103,21 +2446,6 @@ function ItineraryGenerator() {
                 travelLoading ||
                 Boolean(savedTripId)
               }
-              style={{
-                padding: "12px 20px",
-                border: "none",
-                borderRadius: "8px",
-                background: savedTripId
-                  ? "#64748b"
-                  : "#35dfc1",
-                color: "#071421",
-                fontWeight: "700",
-                cursor:
-                  saving || travelLoading || savedTripId
-                    ? "not-allowed"
-                    : "pointer",
-                opacity: saving || travelLoading ? 0.7 : 1
-              }}
             >
               {travelLoading
                 ? "Calculating travel times..."
@@ -2125,37 +2453,20 @@ function ItineraryGenerator() {
                   ? "Saving itinerary..."
                   : savedTripId
                     ? "Saved to My Trips"
-                    : "Save to My Trips"}
+                    : selectedTripId ? "Update Existing Trip" : "Save as New Trip"}
             </button>
 
             {saveMessage && (
-              <p
-                role="status"
-                style={{
-                  marginTop: "12px",
-                  color: savedTripId
-                    ? "#8fffe8"
-                    : "#ffd0d0"
-                }}
-              >
+              <p className={`itinerary-save-message ${savedTripId ? "is-success" : "is-error"}`} role="status">
                 {saveMessage}
               </p>
             )}
 
             {savedTripId && (
               <button
+                className="itinerary-my-trips-link"
                 type="button"
                 onClick={() => navigate("/trips")}
-                style={{
-                  marginTop: "8px",
-                  display: "block",
-                  padding: "10px 0",
-                  border: "none",
-                  background: "transparent",
-                  color: "#8fffe8",
-                  textDecoration: "underline",
-                  cursor: "pointer"
-                }}
               >
                 Go to My Trips →
               </button>

@@ -1,4 +1,4 @@
-
+import { apiUrl } from "../config/api";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -12,6 +12,9 @@ function MyBookings() {
   const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState("");
 
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [modalStep, setModalStep] = useState("confirm");
+
   useEffect(() => {
     async function fetchBookings() {
       const token = localStorage.getItem("token");
@@ -23,11 +26,11 @@ function MyBookings() {
 
       try {
         const response = await fetch(
-          "http://localhost:5000/api/bookings",
+          apiUrl("/api/bookings"),
           {
             headers: {
-              Authorization: `Bearer ${token}`,
-            },
+              Authorization: `Bearer ${token}`
+            }
           }
         );
 
@@ -42,7 +45,9 @@ function MyBookings() {
         setBookings(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Fetch bookings error:", err);
-        setError(err.message || "Unable to load your bookings.");
+        setError(
+          err.message || "Unable to load your bookings."
+        );
       } finally {
         setLoading(false);
       }
@@ -51,15 +56,23 @@ function MyBookings() {
     fetchBookings();
   }, [navigate]);
 
-  async function handleCancelBooking(bookingId) {
-    const shouldCancel = window.confirm(
-      "Are you sure you want to cancel this demo booking?"
-    );
+  function openCancelModal(booking) {
+    setSelectedBooking(booking);
+    setModalStep("confirm");
+    setError("");
+  }
 
-    if (!shouldCancel) {
-      return;
-    }
+  function closeCancelModal() {
+    if (modalStep === "cancelling") return;
 
+    setSelectedBooking(null);
+    setModalStep("confirm");
+  }
+
+  async function handleCancelBooking() {
+    if (!selectedBooking) return;
+
+    const bookingId = selectedBooking._id;
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -69,15 +82,16 @@ function MyBookings() {
 
     try {
       setCancellingId(bookingId);
+      setModalStep("cancelling");
       setError("");
 
       const response = await fetch(
-        `http://localhost:5000/api/bookings/${bookingId}/cancel`,
+        apiUrl(`/api/bookings/${bookingId}/cancel`),
         {
           method: "PATCH",
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
+            Authorization: `Bearer ${token}`
+          }
         }
       );
 
@@ -104,9 +118,17 @@ function MyBookings() {
             : booking
         )
       );
+
+      setSelectedBooking(updatedBooking);
+      setModalStep("success");
     } catch (err) {
       console.error("Cancel booking error:", err);
-      setError(err.message || "Unable to cancel this booking.");
+
+      setError(
+        err.message || "Unable to cancel this booking."
+      );
+
+      setModalStep("error");
     } finally {
       setCancellingId("");
     }
@@ -126,7 +148,7 @@ function MyBookings() {
     return date.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
-      year: "numeric",
+      year: "numeric"
     });
   }
 
@@ -143,7 +165,10 @@ function MyBookings() {
   if (loading) {
     return (
       <main className="my-bookings-page">
-        <p>Loading your bookings...</p>
+        <div className="my-bookings-loading">
+          <div className="booking-loading-spinner"></div>
+          <p>Loading your bookings...</p>
+        </div>
       </main>
     );
   }
@@ -171,7 +196,7 @@ function MyBookings() {
         </p>
       </div>
 
-      {error && (
+      {error && !selectedBooking && (
         <div className="my-bookings-error" role="alert">
           {error}
         </div>
@@ -231,22 +256,30 @@ function MyBookings() {
                 <div className="my-booking-details">
                   <div>
                     <span>Guest</span>
-                    <strong>{booking.guestName || "Not available"}</strong>
+                    <strong>
+                      {booking.guestName || "Not available"}
+                    </strong>
                   </div>
 
                   <div>
                     <span>Check-in</span>
-                    <strong>{formatDate(booking.checkIn)}</strong>
+                    <strong>
+                      {formatDate(booking.checkIn)}
+                    </strong>
                   </div>
 
                   <div>
                     <span>Check-out</span>
-                    <strong>{formatDate(booking.checkOut)}</strong>
+                    <strong>
+                      {formatDate(booking.checkOut)}
+                    </strong>
                   </div>
 
                   <div>
                     <span>Guests</span>
-                    <strong>{booking.guests ?? "Not available"}</strong>
+                    <strong>
+                      {booking.guests ?? "Not available"}
+                    </strong>
                   </div>
                 </div>
 
@@ -275,12 +308,10 @@ function MyBookings() {
                         className="my-booking-cancel-button"
                         disabled={cancellingId === booking._id}
                         onClick={() =>
-                          handleCancelBooking(booking._id)
+                          openCancelModal(booking)
                         }
                       >
-                        {cancellingId === booking._id
-                          ? "Cancelling..."
-                          : "Cancel Booking"}
+                        Cancel Booking
                       </button>
                     )}
                   </div>
@@ -293,6 +324,217 @@ function MyBookings() {
             ))}
           </div>
         </>
+      )}
+
+      {/* CANCELLATION MODAL */}
+      {selectedBooking && (
+        <div
+          className="booking-modal-overlay"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              modalStep !== "cancelling"
+            ) {
+              closeCancelModal();
+            }
+          }}
+        >
+          <section
+            className="booking-cancel-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="booking-modal-title"
+          >
+            <button
+              type="button"
+              className="booking-modal-close"
+              onClick={closeCancelModal}
+              disabled={modalStep === "cancelling"}
+              aria-label="Close dialog"
+            >
+              ×
+            </button>
+
+            {modalStep === "confirm" && (
+              <div className="booking-modal-content booking-modal-enter">
+                <div className="booking-modal-icon warning-icon">
+                  <span>!</span>
+                </div>
+
+                <p className="booking-modal-eyebrow">
+                  BOOKING CANCELLATION
+                </p>
+
+                <h2 id="booking-modal-title">
+                  Are you sure?
+                </h2>
+
+                <p className="booking-modal-description">
+                  You're about to cancel your booking. Please
+                  review the details before continuing.
+                </p>
+
+                <div className="booking-modal-summary">
+                  <div>
+                    <span>Hotel</span>
+                    <strong>
+                      {selectedBooking.hotelName}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Check-in</span>
+                    <strong>
+                      {formatDate(selectedBooking.checkIn)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Estimated total</span>
+                    <strong>
+                      {formatPrice(selectedBooking.totalPrice)}
+                    </strong>
+                  </div>
+                </div>
+
+                <p className="booking-modal-note">
+                  This will update the booking record in Travel
+                  Explorer. Remember, this is a demo booking and
+                  no real hotel reservation is being cancelled.
+                </p>
+
+                <div className="booking-modal-actions">
+                  <button
+                    type="button"
+                    className="booking-keep-button"
+                    onClick={closeCancelModal}
+                  >
+                    Keep Booking
+                  </button>
+
+                  <button
+                    type="button"
+                    className="booking-confirm-cancel-button"
+                    onClick={handleCancelBooking}
+                  >
+                    Yes, Cancel Booking
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {modalStep === "cancelling" && (
+              <div className="booking-modal-content booking-modal-enter">
+                <div className="booking-cancelling-animation">
+                  <div className="booking-spinner-ring"></div>
+                  <span>↻</span>
+                </div>
+
+                <h2 id="booking-modal-title">
+                  Cancelling booking...
+                </h2>
+
+                <p className="booking-modal-description">
+                  Please wait while we update your booking record.
+                </p>
+
+                <div className="booking-progress-track">
+                  <div className="booking-progress-bar"></div>
+                </div>
+              </div>
+            )}
+
+            {modalStep === "success" && (
+              <div className="booking-modal-content booking-modal-enter">
+                <div className="booking-success-animation">
+                  <svg
+                    viewBox="0 0 52 52"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      className="booking-success-circle"
+                      cx="26"
+                      cy="26"
+                      r="24"
+                      fill="none"
+                    />
+                    <path
+                      className="booking-success-check"
+                      fill="none"
+                      d="M14 27 L22 35 L39 17"
+                    />
+                  </svg>
+                </div>
+
+                <p className="booking-modal-eyebrow">
+                  SUCCESSFULLY UPDATED
+                </p>
+
+                <h2 id="booking-modal-title">
+                  Booking cancelled
+                </h2>
+
+                <p className="booking-modal-description">
+                  Your demo booking at{" "}
+                  <strong>{selectedBooking.hotelName}</strong>{" "}
+                  has been successfully cancelled.
+                </p>
+
+                <div className="booking-success-status">
+                  <span>Booking status</span>
+                  <strong>Cancelled</strong>
+                </div>
+
+                <button
+                  type="button"
+                  className="booking-success-button"
+                  onClick={closeCancelModal}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+
+            {modalStep === "error" && (
+              <div className="booking-modal-content booking-modal-enter">
+                <div className="booking-modal-icon error-icon">
+                  <span>!</span>
+                </div>
+
+                <p className="booking-modal-eyebrow">
+                  SOMETHING WENT WRONG
+                </p>
+
+                <h2 id="booking-modal-title">
+                  Cancellation failed
+                </h2>
+
+                <p className="booking-modal-description">
+                  {error ||
+                    "We couldn't cancel this booking. Please try again."}
+                </p>
+
+                <div className="booking-modal-actions">
+                  <button
+                    type="button"
+                    className="booking-keep-button"
+                    onClick={closeCancelModal}
+                  >
+                    Close
+                  </button>
+
+                  <button
+                    type="button"
+                    className="booking-confirm-cancel-button"
+                    onClick={handleCancelBooking}
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
       )}
     </main>
   );

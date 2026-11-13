@@ -1,8 +1,8 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 const Trip = require("../models/Trip");
 const authMiddleware = require("../middleware/authMiddleware");
+const { getIndianDestination } = require("../utils/indiaOnly");
 
 const router = express.Router();
 
@@ -15,14 +15,16 @@ function isValidObjectId(id) {
 }
 
 async function findUserTrip(tripId, userId) {
-  if (!userId || !isValidObjectId(tripId)) {
+  if (!isValidObjectId(tripId)) {
     return null;
   }
 
-  return Trip.findOne({
+  const trip = await Trip.findOne({
     _id: tripId,
     userId
   });
+
+  return trip && getIndianDestination(trip.destination) ? trip : null;
 }
 
 // Create a regular trip.
@@ -34,8 +36,7 @@ router.post("/", authMiddleware, async (req, res) => {
       destination,
       startDate,
       endDate,
-      notes,
-      journeyPlan
+      notes
     } = req.body;
 
     if (!userId) {
@@ -46,19 +47,24 @@ router.post("/", authMiddleware, async (req, res) => {
 
     if (!title || !destination || !startDate || !endDate) {
       return res.status(400).json({
-        message:
-          "Title, destination, start date, and end date are required."
+        message: "Title, destination, start date, and end date are required."
+      });
+    }
+
+    const canonicalDestination = getIndianDestination(destination);
+    if (!canonicalDestination) {
+      return res.status(400).json({
+        message: "Trips are currently supported only for destinations in India."
       });
     }
 
     const trip = await Trip.create({
       userId,
       title,
-      destination,
+      destination: canonicalDestination.name,
       startDate,
       endDate,
-      notes: notes || "",
-      ...(journeyPlan ? { journeyPlan } : {})
+      notes: notes || ""
     });
 
     return res.status(201).json({
@@ -74,12 +80,15 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Save the complete generated itinerary.
-// Keep this route before routes containing /:id.
+// Save a generated itinerary. If tripId is supplied, update that user's
+// existing trip instead of creating a duplicate.
+// Other trip fields and manually added itinerary/place entries are preserved.
+// Keep this fixed route before router.get("/:id").
 router.post("/save-generated", authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
     const {
+      tripId,
       destination,
       startDate,
       endDate,
@@ -104,14 +113,20 @@ router.post("/save-generated", authMiddleware, async (req, res) => {
       });
     }
 
+    const canonicalDestination = getIndianDestination(destination);
+    if (!canonicalDestination) {
+      return res.status(400).json({
+        message: "Generated trips are currently supported only for destinations in India."
+      });
+    }
+
     if (
       !generatedItinerary ||
       typeof generatedItinerary !== "object" ||
       !Array.isArray(generatedItinerary.days)
     ) {
       return res.status(400).json({
-        message:
-          "A valid generated itinerary with a days array is required."
+        message: "A valid generated itinerary with a days array is required."
       });
     }
 
@@ -128,24 +143,56 @@ router.post("/save-generated", authMiddleware, async (req, res) => {
       });
     }
 
-    const tripData = {
-      userId,
-      title: `${destination.trim()} Travel Plan`,
-      destination: destination.trim(),
-      startDate: parsedStartDate,
-      endDate: parsedEndDate,
-      notes: "Automatically generated travel itinerary",
-      generatedItinerary
-    };
+    let trip;
+    let created = false;
 
-    if (journeyPlan && typeof journeyPlan === "object") {
-      tripData.journeyPlan = journeyPlan;
+    if (tripId) {
+      if (!isValidObjectId(tripId)) {
+        return res.status(400).json({
+          message: "Invalid trip ID."
+        });
+      }
+
+      trip = await findUserTrip(tripId, userId);
+
+      if (!trip) {
+        return res.status(404).json({
+          message:
+            "Trip not found or you do not have permission to update it."
+        });
+      }
+
+      // Only replace generated content. Preserve title, notes, manual
+      // itinerary entries, saved places, and the original trip dates.
+      trip.generatedItinerary = generatedItinerary;
+
+      if (journeyPlan && typeof journeyPlan === "object") {
+        trip.journeyPlan = journeyPlan;
+      }
+
+      await trip.save();
+    } else {
+      trip = await Trip.create({
+        userId,
+        title: `${canonicalDestination.name} Travel Plan`,
+        destination: canonicalDestination.name,
+        startDate: parsedStartDate,
+        endDate: parsedEndDate,
+        notes: "Automatically generated travel itinerary",
+        generatedItinerary,
+        ...(journeyPlan && typeof journeyPlan === "object"
+          ? { journeyPlan }
+          : {})
+      });
+
+      created = true;
     }
 
-    const trip = await Trip.create(tripData);
-
-    return res.status(201).json({
-      message: "Generated itinerary saved successfully.",
+    return res.status(created ? 201 : 200).json({
+      message: created
+        ? "Generated itinerary saved successfully."
+        : "Generated itinerary updated successfully.",
+      created,
       trip
     });
   } catch (error) {
@@ -172,8 +219,11 @@ router.get("/", authMiddleware, async (req, res) => {
     const trips = await Trip.find({ userId }).sort({
       createdAt: -1
     });
+    const indiaTrips = trips.filter((trip) =>
+      getIndianDestination(trip.destination)
+    );
 
-    return res.json(trips);
+    return res.json(indiaTrips);
   } catch (error) {
     console.error("Get trips error:", error);
 
@@ -391,7 +441,7 @@ router.patch(
   }
 );
 
-// Get one trip. Keep after fixed routes.
+// Get one trip. Keep this after the fixed routes above.
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -418,19 +468,12 @@ router.put("/:id", authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
 
-    if (!userId) {
-      return res.status(401).json({
-        message: "Unable to identify the logged-in user."
-      });
-    }
-
     const allowedFields = [
       "title",
       "destination",
       "startDate",
       "endDate",
-      "notes",
-      "journeyPlan"
+      "notes"
     ];
 
     const updates = {};
@@ -439,6 +482,23 @@ router.put("/:id", authMiddleware, async (req, res) => {
       if (req.body[field] !== undefined) {
         updates[field] = req.body[field];
       }
+    }
+
+    if (updates.destination !== undefined) {
+      const canonicalDestination = getIndianDestination(updates.destination);
+      if (!canonicalDestination) {
+        return res.status(400).json({
+          message: "Trips are currently supported only for destinations in India."
+        });
+      }
+      updates.destination = canonicalDestination.name;
+    }
+
+    const existingTrip = await findUserTrip(req.params.id, userId);
+    if (!existingTrip) {
+      return res.status(404).json({
+        message: "Trip not found."
+      });
     }
 
     const trip = await Trip.findOneAndUpdate(
@@ -477,22 +537,15 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
 
-    if (!userId) {
-      return res.status(401).json({
-        message: "Unable to identify the logged-in user."
-      });
-    }
+    const existingTrip = await findUserTrip(req.params.id, userId);
 
-    const trip = await Trip.findOneAndDelete({
-      _id: req.params.id,
-      userId
-    });
-
-    if (!trip) {
+    if (!existingTrip) {
       return res.status(404).json({
         message: "Trip not found."
       });
     }
+
+    await Trip.findByIdAndDelete(req.params.id);
 
     return res.json({
       message: "Trip deleted successfully."

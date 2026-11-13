@@ -1,4 +1,4 @@
-
+import { apiUrl } from "../config/api";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -24,7 +24,7 @@ function BookingConfirmation() {
 
       try {
         const response = await fetch(
-          `http://localhost:5000/api/bookings/${id}`,
+          apiUrl(`/api/bookings/${id}`),
           {
             headers: {
               Authorization: `Bearer ${token}`,

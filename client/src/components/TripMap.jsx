@@ -14,7 +14,7 @@ import "./TripMap.css";
 const createNumberedIcon = (number) =>
   L.divIcon({
     className: "trip-map-number-icon",
-    html: `<div class="trip-map-marker">${number}</div>`,
+    html: `<div class="trip-map-marker"><span>${number}</span></div>`,
     iconSize: [34, 42],
     iconAnchor: [17, 40],
     popupAnchor: [0, -36],
@@ -177,6 +177,7 @@ export default function TripMap({ generatedItinerary }) {
     <section className="trip-map-card">
       <div className="trip-map-header">
         <div>
+          <span className="trip-map-eyebrow">EXPLORE YOUR ROUTE</span>
           <h2>Trip Map</h2>
           <p className="trip-map-description">
             Explore the locations included in your itinerary.
@@ -233,9 +234,9 @@ export default function TripMap({ generatedItinerary }) {
                 <Polyline
                   positions={routePositions}
                   pathOptions={{
-                    color: "#2563eb",
+                    color: "#244c3e",
                     weight: 3,
-                    opacity: 0.7,
+                    opacity: 0.75,
                     dashArray: "7 7",
                   }}
                 />

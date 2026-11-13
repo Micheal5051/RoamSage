@@ -1,0 +1,88 @@
+.hotel-map-wrapper {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.hotel-leaflet-map {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  z-index: 1;
+}
+
+.hotel-map-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 20px;
+  color: #777b74;
+  background: #f7f6f2;
+  border: 1px solid #e5e1d8;
+  border-radius: 12px;
+}
+
+.hotel-map-destination-popup {
+  min-width: 180px;
+  font-family: "DM Sans", sans-serif;
+}
+
+.hotel-map-destination-popup strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #244c3e;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.hotel-map-destination-popup p {
+  margin: 0 0 5px;
+  color: #555b53;
+  font-size: 12px;
+}
+
+.hotel-map-destination-popup span {
+  color: #a18b69;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hotel-map-hotel-popup {
+  min-width: 170px;
+  font-family: "DM Sans", sans-serif;
+}
+
+.hotel-map-hotel-popup > strong {
+  display: block;
+  margin-bottom: 7px;
+  color: #244c3e;
+  font-size: 14px;
+}
+
+.hotel-map-hotel-popup p {
+  margin: 5px 0;
+  color: #62665f;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.hotel-map-selected-label {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #fce8e6;
+  color: #b42318;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  .hotel-map-wrapper,
+  .hotel-leaflet-map {
+    min-height: 360px;
+  }
+}

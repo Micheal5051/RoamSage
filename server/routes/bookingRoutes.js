@@ -1,4 +1,3 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 
@@ -6,56 +5,43 @@ const Booking = require("../models/Booking");
 const Trip = require("../models/Trip");
 const hotels = require("../data/hotels");
 const authMiddleware = require("../middleware/authMiddleware");
+const { isIndianHotel } = require("../utils/indiaOnly");
 
 const router = express.Router();
 
-// Get the logged-in user's ID.
 function getUserId(req) {
   return req.user?.userId || req.user?.id || req.user?._id;
 }
 
-// Find a hotel using trusted server-side data.
 function findHotel(hotelId) {
-  return hotels.find(
-    (hotel) => String(hotel.id) === String(hotelId)
+  return hotels.find((hotel) =>
+    String(hotel.id) === String(hotelId) && isIndianHotel(hotel)
   );
 }
 
-// Validate dates and calculate the number of nights.
 function getBookingNights(checkIn, checkOut) {
   const start = new Date(checkIn);
   const end = new Date(checkOut);
 
-  if (
-    Number.isNaN(start.getTime()) ||
-    Number.isNaN(end.getTime())
-  ) {
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return null;
   }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   const startDay = new Date(start);
   startDay.setHours(0, 0, 0, 0);
-
   const endDay = new Date(end);
   endDay.setHours(0, 0, 0, 0);
 
-  if (startDay < today || endDay <= startDay) {
-    return null;
-  }
+  if (startDay < today || endDay <= startDay) return null;
 
   return Math.round(
-    (endDay.getTime() - startDay.getTime()) /
-      (1000 * 60 * 60 * 24)
+    (endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24)
   );
 }
 
-/*
-CREATE BOOKING
-POST /api/bookings
-*/
+// CREATE BOOKING - POST /api/bookings
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -91,10 +77,7 @@ router.post("/", authMiddleware, async (req, res) => {
 
     const guestCount = Number(guests);
 
-    if (
-      !Number.isInteger(guestCount) ||
-      guestCount < 1
-    ) {
+    if (!Number.isInteger(guestCount) || guestCount < 1) {
       return res.status(400).json({
         message: "Guests must be a positive whole number."
       });
@@ -117,14 +100,9 @@ router.post("/", authMiddleware, async (req, res) => {
       });
     }
 
-    // Verify the selected trip if tripId was provided.
     let selectedTripId = null;
 
-    if (
-      tripId !== undefined &&
-      tripId !== null &&
-      tripId !== ""
-    ) {
+    if (tripId !== undefined && tripId !== null && tripId !== "") {
       if (!mongoose.Types.ObjectId.isValid(tripId)) {
         return res.status(400).json({
           message: "Invalid trip ID."
@@ -148,18 +126,11 @@ router.post("/", authMiddleware, async (req, res) => {
 
     const pricePerNight = Number(hotel.price.amount);
 
-    if (
-      !Number.isFinite(pricePerNight) ||
-      pricePerNight <= 0
-    ) {
+    if (!Number.isFinite(pricePerNight) || pricePerNight <= 0) {
       return res.status(500).json({
         message: "Hotel price is currently unavailable."
       });
     }
-
-    // Calculate the total on the server.
-    // Never trust a total submitted by the browser.
-    const totalPrice = nights * pricePerNight;
 
     const booking = await Booking.create({
       userId,
@@ -172,7 +143,7 @@ router.post("/", authMiddleware, async (req, res) => {
       guestName: guestName.trim(),
       guestEmail: guestEmail.trim(),
       pricePerNight,
-      totalPrice
+      totalPrice: nights * pricePerNight
     });
 
     return res.status(201).json(booking);
@@ -185,16 +156,11 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
-/*
-GET MY BOOKINGS
-GET /api/bookings
-*/
+// GET MY BOOKINGS - GET /api/bookings
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const userId = getUserId(req);
-
     const bookings = await Booking.find({
-      userId
+      userId: getUserId(req)
     }).sort({ createdAt: -1 });
 
     return res.json(bookings);
@@ -207,14 +173,78 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-/*
-GET ONE BOOKING
-GET /api/bookings/:id
-*/
+// GET THE CONFIRMED HOTEL LINKED TO A TRIP.
+// Keep this route before GET /:id.
+router.get("/trip/:tripId", authMiddleware, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { tripId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      return res.status(400).json({
+        message: "Invalid trip ID."
+      });
+    }
+
+    const trip = await Trip.findOne({
+      _id: tripId,
+      userId
+    });
+
+    if (!trip) {
+      return res.status(404).json({
+        message: "Trip not found."
+      });
+    }
+
+    const booking = await Booking.findOne({
+      userId,
+      tripId: trip._id,
+      status: "confirmed"
+    }).sort({
+      checkIn: 1,
+      createdAt: -1
+    });
+
+    if (!booking) {
+      return res.json({
+        booking: null,
+        hotel: null
+      });
+    }
+
+    const hotelRecord = findHotel(booking.hotelId);
+
+    const hotel = hotelRecord
+      ? {
+          id: hotelRecord.id,
+          name: hotelRecord.name,
+          address: hotelRecord.address,
+          location: hotelRecord.location,
+          price: hotelRecord.price,
+          mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            `${hotelRecord.location.latitude},${hotelRecord.location.longitude}`
+          )}`
+        }
+      : null;
+
+    return res.json({
+      booking,
+      hotel
+    });
+  } catch (error) {
+    console.error("Fetch trip booking error:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch the trip's confirmed booking."
+    });
+  }
+});
+
+// GET ONE BOOKING - GET /api/bookings/:id
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = getUserId(req);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -224,7 +254,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
 
     const booking = await Booking.findOne({
       _id: id,
-      userId
+      userId: getUserId(req)
     });
 
     if (!booking) {
@@ -243,56 +273,48 @@ router.get("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-/*
-CANCEL BOOKING
-PATCH /api/bookings/:id/cancel
-*/
-router.patch(
-  "/:id/cancel",
-  authMiddleware,
-  async (req, res) => {
-    try {
-      const { id } = req.params;
-      const userId = getUserId(req);
+// CANCEL BOOKING - PATCH /api/bookings/:id/cancel
+router.patch("/:id/cancel", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
 
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({
-          message: "Invalid booking ID."
-        });
-      }
-
-      const booking = await Booking.findOne({
-        _id: id,
-        userId
-      });
-
-      if (!booking) {
-        return res.status(404).json({
-          message: "Booking not found."
-        });
-      }
-
-      if (booking.status === "cancelled") {
-        return res.status(400).json({
-          message: "This booking has already been cancelled."
-        });
-      }
-
-      booking.status = "cancelled";
-      await booking.save();
-
-      return res.json({
-        message: "Booking cancelled successfully.",
-        booking
-      });
-    } catch (error) {
-      console.error("Cancel booking error:", error);
-
-      return res.status(500).json({
-        message: "Failed to cancel booking."
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid booking ID."
       });
     }
+
+    const booking = await Booking.findOne({
+      _id: id,
+      userId: getUserId(req)
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found."
+      });
+    }
+
+    if (booking.status === "cancelled") {
+      return res.status(400).json({
+        message: "This booking has already been cancelled."
+      });
+    }
+
+    booking.status = "cancelled";
+    await booking.save();
+
+    return res.json({
+      message: "Booking cancelled successfully.",
+      booking
+    });
+  } catch (error) {
+    console.error("Cancel booking error:", error);
+
+    return res.status(500).json({
+      message: "Failed to cancel booking."
+    });
   }
-);
+});
 
 module.exports = router;

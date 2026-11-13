@@ -1,3 +1,4 @@
+import { apiUrl } from "../config/api";
 
 import { useEffect, useState } from "react";
 import {
@@ -49,7 +50,7 @@ function Booking() {
     async function fetchHotel() {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/hotels/${id}`
+          apiUrl(`/api/hotels/${id}`)
         );
 
         if (!response.ok) {
@@ -79,7 +80,7 @@ function Booking() {
 
       try {
         const response = await fetch(
-          "http://localhost:5000/api/trips",
+          apiUrl("/api/trips"),
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -127,9 +128,17 @@ function Booking() {
 
   const nights = calculateNights();
 
-  const totalPrice = hotel
-    ? nights * hotel.price.amount
-    : 0;
+  const pricePerNight = Number(
+    hotel?.price?.amount ?? hotel?.pricePerNight
+  );
+
+  const hasValidPrice =
+    Number.isFinite(pricePerNight) && pricePerNight >= 0;
+
+  const totalPrice =
+    hotel && hasValidPrice
+      ? nights * pricePerNight
+      : 0;
 
   function validateForm() {
     if (!guestName.trim()) {
@@ -166,6 +175,10 @@ function Booking() {
 
     if (!hotel || !hotel.available) {
       return "This hotel is currently unavailable.";
+    }
+
+    if (!hasValidPrice) {
+      return "The hotel's price is unavailable. Please choose another hotel or try again later.";
     }
 
     if (
@@ -207,7 +220,7 @@ function Booking() {
         guests: Number(guests),
         guestName: guestName.trim(),
         guestEmail: guestEmail.trim(),
-        pricePerNight: hotel.price.amount,
+        pricePerNight,
         totalPrice
       };
 
@@ -216,7 +229,7 @@ function Booking() {
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/bookings",
+        apiUrl("/api/bookings"),
         {
           method: "POST",
           headers: {
@@ -409,7 +422,7 @@ function Booking() {
             <button
               type="submit"
               className="confirm-booking-button"
-              disabled={submitting || !hotel.available}
+              disabled={submitting || !hotel.available || !hasValidPrice}
             >
               {submitting
                 ? "Confirming..."
@@ -429,7 +442,9 @@ function Booking() {
             <span>Price per night</span>
 
             <strong>
-              ₹{hotel.price.amount.toLocaleString("en-IN")}
+              {hasValidPrice
+                ? `₹${pricePerNight.toLocaleString("en-IN")}`
+                : "Price unavailable"}
             </strong>
           </div>
 
@@ -447,7 +462,9 @@ function Booking() {
             <span>Total</span>
 
             <strong>
-              ₹{totalPrice.toLocaleString("en-IN")}
+              {hasValidPrice
+                ? `₹${totalPrice.toLocaleString("en-IN")}`
+                : "—"}
             </strong>
           </div>
         </aside>

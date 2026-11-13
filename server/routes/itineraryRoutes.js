@@ -14,7 +14,9 @@ router.post("/generate", authMiddleware, (req, res) => {
       startDate,
       endDate,
       interests = [],
-      journeyPlan = null
+      journeyPlan = null,
+      selectedAttractionIds = null,
+      previewOnly = false
     } = req.body;
 
     if (
@@ -60,12 +62,32 @@ router.post("/generate", authMiddleware, (req, res) => {
       });
     }
 
+    if (selectedAttractionIds !== null && !Array.isArray(selectedAttractionIds)) {
+      return res.status(400).json({
+        message: "Selected attractions must be provided as a list."
+      });
+    }
+
+    if (selectedAttractionIds && !selectedAttractionIds.every(id => ["string", "number"].includes(typeof id))) {
+      return res.status(400).json({
+        message: "Every selected attraction ID must be a string or number."
+      });
+    }
+
+    if (typeof previewOnly !== "boolean") {
+      return res.status(400).json({
+        message: "previewOnly must be true or false."
+      });
+    }
+
     const result = generateItinerary({
       destination: destination.trim(),
       startDate,
       endDate,
       interests,
-      journeyPlan
+      journeyPlan,
+      selectedAttractionIds,
+      previewOnly
     });
 
     return res.status(200).json(result);

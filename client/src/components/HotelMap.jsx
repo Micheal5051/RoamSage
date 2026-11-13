@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -6,249 +7,239 @@ import {
   Circle,
   useMap
 } from "react-leaflet";
-
 import L from "leaflet";
-
 import "leaflet/dist/leaflet.css";
-
-
-/* =========================
-   NORMAL HOTEL MARKER
-   ========================= */
+import "./HotelMap.css";
 
 const normalMarkerIcon = new L.Icon({
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
-
   iconAnchor: [12, 41],
-
   popupAnchor: [1, -34],
-
   shadowSize: [41, 41]
 });
-
-
-/* =========================
-   SELECTED HOTEL MARKER
-   RED
-   ========================= */
 
 const selectedMarkerIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
-
   iconAnchor: [12, 41],
-
   popupAnchor: [1, -34],
-
   shadowSize: [41, 41]
 });
 
+const destinationMarkerIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [28, 46],
+  iconAnchor: [14, 46],
+  popupAnchor: [1, -38],
+  shadowSize: [41, 41]
+});
 
-/* =========================
-   MAP CONTROLLER
-   ========================= */
+function getHotelCoordinates(hotel) {
+  const latitude = Number(
+    hotel?.location?.latitude ?? hotel?.latitude
+  );
 
-function MapController({
-  selectedHotel
-}) {
+  const longitude = Number(
+    hotel?.location?.longitude ??
+    hotel?.longitude ??
+    hotel?.lng
+  );
+
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return null;
+  }
+
+  return [latitude, longitude];
+}
+
+function MapController({ selectedHotel }) {
   const map = useMap();
 
-  if (selectedHotel) {
+  useEffect(() => {
+    const position = getHotelCoordinates(selectedHotel);
 
-    const position = [
-      selectedHotel.location.latitude,
-      selectedHotel.location.longitude
-    ];
-
-    map.flyTo(
-      position,
-      15,
-      {
+    if (position) {
+      map.flyTo(position, 15, {
         duration: 1
-      }
-    );
-  }
+      });
+    }
+  }, [map, selectedHotel]);
 
   return null;
 }
 
+function formatHotelPrice(price) {
+  if (
+    price?.amount == null ||
+    !Number.isFinite(Number(price.amount))
+  ) {
+    return "Price not available";
+  }
 
-/* =========================
-   HOTEL MAP
-   ========================= */
+  return `₹${Number(price.amount).toLocaleString("en-IN")} / ${
+    price.period || "per night"
+  }`;
+}
 
 function HotelMap({
-  hotels,
+  hotels = [],
   latitude,
   longitude,
-  selectedHotel
+  selectedHotel,
+  radiusKm = 5,
+  destinationName = "Selected Attraction"
 }) {
-
   const destinationPosition = [
-    latitude,
-    longitude
+    Number(latitude),
+    Number(longitude)
   ];
 
+  const safeRadiusKm = Number(radiusKm);
+
+  const radiusMeters =
+    Number.isFinite(safeRadiusKm) && safeRadiusKm > 0
+      ? safeRadiusKm * 1000
+      : 5000;
+
+  if (
+    !Number.isFinite(destinationPosition[0]) ||
+    !Number.isFinite(destinationPosition[1]) ||
+    destinationPosition[0] < -90 ||
+    destinationPosition[0] > 90 ||
+    destinationPosition[1] < -180 ||
+    destinationPosition[1] > 180
+  ) {
+    return (
+      <div className="hotel-map-error">
+        Destination coordinates are unavailable.
+      </div>
+    );
+  }
+
+  const validHotels = hotels
+    .map((hotel) => ({
+      hotel,
+      position: getHotelCoordinates(hotel)
+    }))
+    .filter((item) => item.position);
+
+  const selectedHotelId =
+    selectedHotel?.id ?? selectedHotel?._id;
 
   return (
-
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        minHeight: "500px"
-      }}
-    >
-
+    <div className="hotel-map-wrapper">
       <MapContainer
         center={destinationPosition}
         zoom={13}
         scrollWheelZoom={true}
-        style={{
-          width: "100%",
-          height: "100%"
-        }}
+        className="hotel-leaflet-map"
       >
-
-
-        {/* =========================
-            MAP TILES
-            ========================= */}
-
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-
-        {/* =========================
-            DESTINATION MARKER
-            ========================= */}
-
+        {/* Green marker for the selected attraction */}
         <Marker
           position={destinationPosition}
-          icon={normalMarkerIcon}
+          icon={destinationMarkerIcon}
         >
-
           <Popup>
-
-            <strong>
-              Selected Destination
-            </strong>
-
-            <br />
-
-            Latitude: {latitude}
-
-            <br />
-
-            Longitude: {longitude}
-
+            <div className="hotel-map-destination-popup">
+              <strong>{destinationName}</strong>
+              <p>Your selected attraction</p>
+              <span>Hotel search starting point</span>
+            </div>
           </Popup>
-
         </Marker>
 
-
-        {/* =========================
-            5 KM SEARCH AREA
-            ========================= */}
-
+        {/* Radius circle follows the distance filter */}
         <Circle
           center={destinationPosition}
-          radius={5000}
+          radius={radiusMeters}
           pathOptions={{
+            color: "#244c3e",
+            weight: 2,
+            fillColor: "#244c3e",
             fillOpacity: 0.08
           }}
         />
 
+        <MapController selectedHotel={selectedHotel} />
 
-        {/* =========================
-            MAP CONTROLLER
-            ========================= */}
-
-        <MapController
-          selectedHotel={selectedHotel}
-        />
-
-
-        {/* =========================
-            HOTEL MARKERS
-            ========================= */}
-
-        {hotels.map((hotel) => {
+        {/* Hotel markers */}
+        {validHotels.map(({ hotel, position }) => {
+          const hotelId = hotel.id ?? hotel._id;
 
           const isSelected =
-            selectedHotel?.id === hotel.id;
-
+            selectedHotelId != null &&
+            String(selectedHotelId) === String(hotelId);
 
           return (
-
             <Marker
-              key={hotel.id}
-              position={[
-                hotel.location.latitude,
-                hotel.location.longitude
-              ]}
+              key={
+                hotelId ??
+                `${hotel.name}-${position.join(",")}`
+              }
+              position={position}
               icon={
                 isSelected
                   ? selectedMarkerIcon
                   : normalMarkerIcon
               }
+              zIndexOffset={isSelected ? 1000 : 0}
             >
-
               <Popup>
+                <div className="hotel-map-hotel-popup">
+                  <strong>{hotel.name}</strong>
 
-                <strong>
-                  {hotel.name}
-                </strong>
+                  <p>
+                    ⭐{" "}
+                    {hotel.rating != null
+                      ? hotel.rating
+                      : "Rating not available"}
+                  </p>
 
-                <br />
+                  <p>
+                    📍{" "}
+                    {hotel.distance != null
+                      ? `${hotel.distance} km away`
+                      : "Distance not available"}
+                  </p>
 
-                ⭐ {hotel.rating}
+                  <p>{formatHotelPrice(hotel.price)}</p>
 
-                <br />
+                  <p>
+                    {hotel.availabilityStatus === "not_checked"
+                      ? "● Availability not checked"
+                      : hotel.available
+                        ? "● Available"
+                        : "● Unavailable"}
+                  </p>
 
-                📍 {hotel.distance} km away
-
-                <br />
-
-                ₹
-                {hotel.price.amount.toLocaleString()}
-                {" / "}
-                {hotel.price.period}
-
-                <br />
-                <br />
-
-                {hotel.available
-                  ? "● Available"
-                  : "● Unavailable"}
-
+                  {isSelected && (
+                    <span className="hotel-map-selected-label">
+                      Selected hotel
+                    </span>
+                  )}
+                </div>
               </Popup>
-
             </Marker>
-
           );
-
         })}
-
-
       </MapContainer>
-
     </div>
   );
 }

@@ -34,8 +34,8 @@
   background:
     linear-gradient(
       125deg,
-      #17324d,
-      #24546b
+      #19382e,
+      #244c3e
     );
 
   color: white;
@@ -88,7 +88,7 @@
 .trips-label {
   display: block;
 
-  color: #62bbb5;
+  color: #a18b69;
 
   font-size: 11px;
   font-weight: 850;
@@ -107,7 +107,7 @@
 }
 
 .trips-hero h1 span {
-  color: #ffd09b;
+  color: #e0c9a3;
 }
 
 .trips-hero p {
@@ -141,7 +141,7 @@
 
   border-radius: 11px;
 
-  background: #e98b4a;
+  background: #a18b69;
   color: white;
 
   text-decoration: none;
@@ -158,7 +158,7 @@
 }
 
 .new-trip-button:hover {
-  background: #f19a59;
+  background: #8d7657;
 
   transform: translateY(-2px);
 }
@@ -188,7 +188,7 @@
 .trips-section-heading h2 {
   margin: 7px 0 0;
 
-  color: #17324d;
+  color: #19382e;
 
   font-size: 34px;
 
@@ -200,9 +200,9 @@
 
   border-radius: 20px;
 
-  background: #e8f4f2;
+  background: #f3eee4;
 
-  color: #167c80;
+  color: #244c3e;
 
   font-size: 12px;
   font-weight: 800;
@@ -228,7 +228,7 @@
 .trip-card {
   overflow: hidden;
 
-  border: 1px solid #e1ecea;
+  border: 1px solid #e5e1d8;
 
   border-radius: 22px;
 
@@ -267,8 +267,8 @@
   background:
     linear-gradient(
       135deg,
-      #167c80,
-      #24546b
+      #244c3e,
+      #244c3e
     );
 }
 
@@ -329,7 +329,7 @@
     linear-gradient(
       135deg,
       #315c66,
-      #167c80
+      #244c3e
     );
 }
 
@@ -387,7 +387,7 @@
 .trip-card-heading h3 {
   margin: 0;
 
-  color: #17324d;
+  color: #19382e;
 
   font-size: 23px;
 
@@ -397,7 +397,7 @@
 .trip-destination {
   margin: 6px 0 0;
 
-  color: #6c818b;
+  color: #777b74;
 
   font-size: 13px;
   font-weight: 650;
@@ -408,9 +408,9 @@
 
   border-radius: 15px;
 
-  background: #e8f4f2;
+  background: #f3eee4;
 
-  color: #167c80;
+  color: #244c3e;
 
   font-size: 10px;
   font-weight: 800;
@@ -435,7 +435,7 @@
 
   border-radius: 12px;
 
-  background: #f5f9f8;
+  background: #f7f6f2;
 }
 
 .trip-date-box > span {
@@ -458,7 +458,7 @@
 
   margin-bottom: 3px;
 
-  color: #8b9ba2;
+  color: #777b74;
 
   font-size: 9px;
   font-weight: 850;
@@ -467,7 +467,7 @@
 }
 
 .trip-date-box strong {
-  color: #365465;
+  color: #244c3e;
 
   font-size: 12px;
 }
@@ -483,7 +483,7 @@
 
   overflow: hidden;
 
-  color: #71848d;
+  color: #777b74;
 
   font-size: 13px;
 
@@ -511,7 +511,7 @@
 }
 
 .trip-card-footer > span {
-  color: #93a1a7;
+  color: #777b74;
 
   font-size: 11px;
   font-weight: 700;
@@ -527,7 +527,7 @@
 
   border-radius: 9px;
 
-  background: #17324d;
+  background: #19382e;
   color: white;
 
   text-decoration: none;
@@ -541,7 +541,7 @@
 }
 
 .open-trip-button:hover {
-  background: #167c80;
+  background: #244c3e;
 
   transform: translateX(2px);
 }
@@ -557,7 +557,7 @@
 
   border-radius: 22px;
 
-  background: #f8fbfa;
+  background: #f7f6f2;
 
   text-align: center;
 }
@@ -571,7 +571,7 @@
 .empty-trips h3 {
   margin: 0 0 8px;
 
-  color: #17324d;
+  color: #19382e;
 
   font-size: 23px;
 }
@@ -579,7 +579,7 @@
 .empty-trips p {
   margin: 0 0 20px;
 
-  color: #71848d;
+  color: #777b74;
 }
 
 .empty-trip-button {
@@ -589,7 +589,7 @@
 
   border-radius: 10px;
 
-  background: #167c80;
+  background: #244c3e;
   color: white;
 
   text-decoration: none;
@@ -616,9 +616,9 @@
 
   border-radius: 27px;
 
-  background: #eef7f5;
+  background: #f3eee4;
 
-  border: 1px solid #dbeae7;
+  border: 1px solid #e5e1d8;
 }
 
 .create-trip-intro {
@@ -648,7 +648,7 @@
 .create-trip-intro h2 {
   margin: 8px 0 12px;
 
-  color: #17324d;
+  color: #19382e;
 
   font-size: 34px;
 
@@ -662,7 +662,7 @@
 
   margin: 0;
 
-  color: #71848d;
+  color: #777b74;
 
   font-size: 14px;
 
@@ -676,7 +676,7 @@
 .create-trip-form {
   padding: 25px;
 
-  border: 1px solid #e0ebe9;
+  border: 1px solid #e5e1d8;
 
   border-radius: 19px;
 
@@ -704,7 +704,7 @@
 
   margin-bottom: 7px;
 
-  color: #365465;
+  color: #244c3e;
 
   font-size: 11px;
   font-weight: 800;
@@ -720,7 +720,7 @@
 
   padding: 12px 13px;
 
-  border: 1px solid #d9e6e4;
+  border: 1px solid #e5e1d8;
 
   border-radius: 9px;
 
@@ -728,7 +728,7 @@
 
   background: #fbfdfc;
 
-  color: #17324d;
+  color: #19382e;
 
   font-family: inherit;
 
@@ -745,7 +745,7 @@
 
 .create-trip-form input:focus,
 .create-trip-form textarea:focus {
-  border-color: #167c80;
+  border-color: #244c3e;
 
   box-shadow:
     0 0 0 3px rgba(22, 124, 128, 0.1);
@@ -755,7 +755,7 @@
 
 .create-trip-form input::placeholder,
 .create-trip-form textarea::placeholder {
-  color: #a1afb4;
+  color: #a6a39b;
 }
 
 /* =========================
@@ -771,7 +771,7 @@
 
   background: #fff1ec;
 
-  color: #b85c47;
+  color: #a34b43;
 
   font-size: 12px;
   font-weight: 650;
@@ -794,7 +794,7 @@
 .create-trip-footer p {
   margin: 0;
 
-  color: #89999f;
+  color: #777b74;
 
   font-size: 10px;
 
@@ -809,7 +809,7 @@
   border: none;
   border-radius: 10px;
 
-  background: #167c80;
+  background: #244c3e;
   color: white;
 
   font-family: inherit;
@@ -825,7 +825,7 @@
 }
 
 .create-trip-button:hover:not(:disabled) {
-  background: #12696d;
+  background: #19382e;
 
   transform: translateY(-2px);
 }
@@ -853,7 +853,7 @@
 
   text-align: center;
 
-  color: #6c818b;
+  color: #777b74;
 }
 
 .trips-spinner {
@@ -862,8 +862,8 @@
 
   margin-bottom: 15px;
 
-  border: 4px solid #dcebea;
-  border-top-color: #167c80;
+  border: 4px solid #e5e1d8;
+  border-top-color: #244c3e;
 
   border-radius: 50%;
 
@@ -885,7 +885,7 @@
 .trips-page-state h2 {
   margin: 0 0 8px;
 
-  color: #17324d;
+  color: #19382e;
 }
 
 .trips-page-state p {
@@ -897,7 +897,7 @@
 
   border-radius: 10px;
 
-  background: #167c80;
+  background: #244c3e;
   color: white;
 
   text-decoration: none;
@@ -977,20 +977,20 @@
 .trip-hotel-bookings {
   margin-top: 18px;
   padding: 15px;
-  border: 1px solid #e2eceb;
+  border: 1px solid #e5e1d8;
   border-radius: 12px;
-  background: #f8fbfa;
+  background: #f7f6f2;
 }
 
 .trip-hotel-bookings h4 {
   margin: 0 0 12px;
-  color: #17324d;
+  color: #19382e;
   font-size: 14px;
 }
 
 .no-trip-hotel {
   margin: 0;
-  color: #75868e;
+  color: #777b74;
   font-size: 13px;
 }
 
@@ -1000,22 +1000,22 @@
   align-items: center;
   gap: 10px;
   padding: 10px 0;
-  border-top: 1px solid #e2eceb;
+  border-top: 1px solid #e5e1d8;
   font-size: 13px;
 }
 
 .trip-hotel-booking strong {
-  color: #17324d;
+  color: #19382e;
 }
 
 .trip-hotel-booking > span {
-  color: #75868e;
+  color: #777b74;
 }
 
 .trip-booking-status {
   padding: 4px 9px;
   border-radius: 20px;
-  background: #e5f4ec;
+  background: #e9eee8;
   color: #26734d !important;
   font-size: 11px;
   text-transform: capitalize;
@@ -1023,15 +1023,243 @@
 
 .trip-booking-status.cancelled {
   background: #fce9e9;
-  color: #b33a3a !important;
+  color: #a33d43 !important;
 }
 
 .trip-booking-link {
-  color: #167c80;
+  color: #244c3e;
   font-weight: 700;
   text-decoration: none;
 }
 
 .trip-booking-link:hover {
   text-decoration: underline;
+}
+
+
+/* =========================================
+   MY TRIPS — INLINE SECTION THEME OVERRIDES
+   Keeps the existing JSX and trip behavior intact.
+========================================= */
+
+.my-trips-page {
+  color: #252723;
+  background: #f7f6f2;
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+}
+
+.trips-hero {
+  background: linear-gradient(125deg, #19382e, #244c3e);
+  box-shadow: 0 25px 55px rgba(25, 56, 46, 0.16);
+}
+
+.trips-hero::after {
+  background: rgba(224, 201, 163, 0.2);
+}
+
+.trips-label {
+  color: #cbb58f;
+}
+
+.trips-hero h1 span {
+  color: #e0c9a3;
+}
+
+.new-trip-button {
+  background: #a18b69;
+  box-shadow: 0 8px 20px rgba(161, 139, 105, 0.22);
+}
+
+.new-trip-button:hover {
+  background: #8d7657;
+}
+
+.trips-section-heading h2,
+.trip-card-heading h3,
+.empty-trips h3,
+.create-trip-intro h2,
+.trips-page-state h2 {
+  color: #19382e;
+}
+
+.trip-count,
+.trip-status {
+  background: #f3eee4;
+  color: #244c3e;
+}
+
+.trip-card {
+  border-color: #e5e1d8;
+  background: #ffffff;
+  box-shadow: 0 8px 25px rgba(37, 39, 35, 0.06);
+}
+
+.trip-card:hover {
+  box-shadow: 0 20px 40px rgba(37, 39, 35, 0.1);
+}
+
+.trip-card-visual {
+  background: linear-gradient(135deg, #244c3e, #19382e);
+}
+
+.trip-visual-1 {
+  background: linear-gradient(135deg, #19382e, #65786a);
+}
+
+.trip-visual-2 {
+  background: linear-gradient(135deg, #a18b69, #e0c9a3);
+}
+
+.trip-visual-3 {
+  background: linear-gradient(135deg, #315c4c, #244c3e);
+}
+
+.trip-destination,
+.trip-notes,
+.trip-date-box small,
+.trip-card-footer > span {
+  color: #777b74;
+}
+
+.trip-date-box {
+  background: #f7f6f2;
+}
+
+.trip-date-box > span {
+  background: #ffffff;
+}
+
+.trip-date-box strong,
+.trip-card-footer > span {
+  color: #244c3e;
+}
+
+.open-trip-button,
+.empty-trip-button,
+.trips-login-button {
+  background: #244c3e;
+  color: #ffffff;
+}
+
+.open-trip-button:hover,
+.empty-trip-button:hover,
+.trips-login-button:hover {
+  background: #19382e;
+}
+
+.empty-trips {
+  border-color: #d7d0c2;
+  background: #fbfaf7;
+}
+
+.create-trip-section {
+  background: #f3eee4;
+  border-color: #e5e1d8;
+}
+
+.create-trip-form {
+  background: #ffffff;
+  border-color: #e5e1d8;
+}
+
+.create-trip-form label {
+  color: #244c3e;
+}
+
+.create-trip-form input,
+.create-trip-form textarea {
+  color: #252723;
+  background: #fbfaf7;
+  border-color: #e5e1d8;
+}
+
+.create-trip-form input:focus,
+.create-trip-form textarea:focus {
+  border-color: #a18b69;
+  box-shadow: 0 0 0 3px rgba(161, 139, 105, 0.15);
+}
+
+.create-trip-button {
+  background: #244c3e;
+}
+
+.create-trip-button:hover:not(:disabled) {
+  background: #19382e;
+}
+
+.trips-spinner {
+  border-color: #e5e1d8;
+  border-top-color: #244c3e;
+}
+
+/* Selected attractions, lunch restaurants and hotel blocks.
+   These override the legacy inline colors without changing JSX logic. */
+
+.trip-card-content > section[style] {
+  background: #f7f6f2 !important;
+  border: 1px solid #e5e1d8 !important;
+  border-radius: 12px !important;
+}
+
+.trip-card-content > section[style] h4,
+.trip-card-content > section[style] strong {
+  color: #19382e !important;
+}
+
+.trip-card-content > section[style] span,
+.trip-card-content > section[style] p {
+  color: #777b74 !important;
+}
+
+.trip-card-content > section[style] a {
+  color: #244c3e !important;
+  font-weight: 700;
+}
+
+.trip-card-content > section[style] a:hover {
+  color: #a18b69 !important;
+}
+
+.trip-card-content > section[style] div[style] {
+  border-color: #e5e1d8 !important;
+}
+
+.trip-card-content > section[style] span[style] {
+  background: #ffffff !important;
+  border-color: #e5e1d8 !important;
+  color: #244c3e !important;
+}
+
+/* Responsive polish */
+
+@media (max-width: 650px) {
+  .trips-hero {
+    background: linear-gradient(135deg, #19382e, #244c3e);
+  }
+
+  .create-trip-section {
+    background: #f3eee4;
+  }
+}
+.my-trips-page .booking-hotel-button,
+.my-trips-page .booking-hotel-button:link,
+.my-trips-page .booking-hotel-button:visited {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  padding: 12px 18px;
+  border-radius: 9px;
+  background: #244c3e !important;
+  color: #ffffff !important;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.my-trips-page .booking-hotel-button:hover {
+  background: #19382e !important;
+  color: #ffffff !important;
 }

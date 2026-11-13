@@ -1,0 +1,400 @@
+
+.regions-section {
+  padding: 100px 7%;
+  background: #f7f6f2;
+}
+
+.regions-heading {
+  max-width: 720px;
+  margin: 0 auto 48px;
+  text-align: center;
+}
+
+.section-eyebrow,
+.region-eyebrow {
+  display: block;
+  color: #a18b69;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  margin-bottom: 14px;
+}
+
+.regions-heading h2 {
+  margin: 0;
+  color: #252723;
+  font-family: "Oswald", sans-serif;
+  font-size: clamp(36px, 5vw, 54px);
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.regions-heading p {
+  max-width: 600px;
+  margin: 16px auto 0;
+  color: #777b74;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.regions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  max-width: 1250px;
+  margin: 0 auto;
+}
+
+.region-card {
+  height: 460px;
+  perspective: 1400px;
+  border-radius: 14px;
+}
+
+.region-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.region-card.is-flipped .region-card-inner {
+  transform: rotateY(180deg);
+}
+
+.region-card-front,
+.region-card-back {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.region-card-front {
+  background: #244c3e;
+  box-shadow: 0 12px 35px rgba(37, 39, 35, 0.12);
+}
+
+.region-card-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1s ease, opacity 0.5s ease;
+  animation: regionImageFade 0.7s ease;
+}
+
+.region-card:hover .region-card-image {
+  transform: scale(1.045);
+}
+
+@keyframes regionImageFade {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.region-image-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  color: white;
+  background: #244c3e;
+}
+
+.region-image-fallback span {
+  font-family: "Oswald", sans-serif;
+  font-size: 36px;
+}
+
+.region-image-fallback small {
+  color: #e0c9a3;
+  letter-spacing: 1px;
+}
+
+.region-card-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 38px;
+  color: #fff;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.02) 10%,
+    rgba(0, 0, 0, 0.18) 42%,
+    rgba(0, 0, 0, 0.78) 100%
+  );
+}
+
+.region-card-overlay .region-eyebrow {
+  color: #e0c9a3;
+}
+
+.region-card-overlay h3,
+.region-card-back h3 {
+  margin: 0 0 9px;
+  font-family: "Oswald", sans-serif;
+  font-size: clamp(38px, 4vw, 50px);
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.region-card-overlay p {
+  margin: 0 0 25px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.region-explore {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 210px;
+  padding: 13px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  color: white;
+  font-size: 13px;
+  transition: background 0.25s ease;
+}
+
+.region-card:hover .region-explore {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.region-photo-indicators {
+  position: absolute;
+  top: 22px;
+  left: 28px;
+  right: 28px;
+  display: flex;
+  gap: 7px;
+  pointer-events: none;
+}
+
+.region-photo-indicators span {
+  height: 3px;
+  flex: 1;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.48);
+  transition: background 0.3s ease;
+}
+
+.region-photo-indicators span.active {
+  background: #fff;
+}
+
+.region-flip-button {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.region-flip-button:focus-visible {
+  outline: 3px solid #e0c9a3;
+  outline-offset: -6px;
+}
+
+.region-card-back {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 35px 38px;
+  color: white;
+  background: #244c3e;
+  transform: rotateY(180deg);
+  box-shadow: 0 12px 35px rgba(37, 39, 35, 0.12);
+}
+
+.region-card-back .region-eyebrow {
+  color: #e0c9a3;
+}
+
+.region-card-back h3 {
+  font-size: 42px;
+}
+
+.region-card-back > p {
+  margin: 0 0 20px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+}
+
+.region-destinations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 22px;
+}
+
+.region-destinations button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.17);
+  color: white;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s ease, padding 0.2s ease;
+}
+
+.region-destinations button:hover {
+  padding-left: 5px;
+  color: #e0c9a3;
+}
+
+.region-destinations button:focus-visible,
+.region-back-hint:focus-visible {
+  outline: 2px solid #e0c9a3;
+  outline-offset: 4px;
+}
+
+.region-destinations button small {
+  flex-shrink: 0;
+  color: #d5b98c;
+  font-size: 10px;
+}
+
+.region-destinations button > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.region-destination-arrow {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: #d5b98c;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.region-destinations button:hover .region-destination-arrow,
+.region-destinations button:focus-visible .region-destination-arrow {
+  opacity: 1;
+}
+
+.region-back-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin-top: 24px;
+  padding: 0;
+  border: none;
+  color: #e0c9a3;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: gap 0.2s ease;
+}
+
+.region-back-hint:hover {
+  gap: 13px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  .regions-section {
+    padding: 75px 5%;
+  }
+
+  .region-card {
+    height: 400px;
+  }
+
+  .region-card-overlay {
+    padding: 28px;
+  }
+
+  .region-card-back {
+    padding: 28px;
+  }
+}
+
+@media (max-width: 700px) {
+  .regions-section {
+    padding: 65px 5%;
+  }
+
+  .regions-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .region-card {
+    height: 390px;
+  }
+}
+
+@media (max-width: 420px) {
+  .region-card {
+    height: 420px;
+  }
+
+  .region-card-back {
+    padding: 24px 20px;
+  }
+
+  .region-card-back h3 {
+    font-size: 36px;
+  }
+
+  .region-destinations {
+    column-gap: 12px;
+  }
+
+  .region-destinations button {
+    gap: 7px;
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .region-card-inner,
+  .region-card-image,
+  .region-destinations button,
+  .region-back-hint {
+    transition: none;
+    animation: none;
+  }
+}
