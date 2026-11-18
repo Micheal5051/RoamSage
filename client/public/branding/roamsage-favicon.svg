@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="RoamSage">
+  <title>RoamSage</title>
+  <path d="M98.3 27.9 A50 50 0 1 1 68.7 10.8" fill="none" stroke="#0F3D3A" stroke-width="11" stroke-linecap="round"/>
+  <path d="M46 90 C46 70 78 72 74 54 C71 40 80 32 84 19" fill="none" stroke="#0F3D3A" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="84" cy="17" r="10" fill="#C8963A"/>
+</svg>

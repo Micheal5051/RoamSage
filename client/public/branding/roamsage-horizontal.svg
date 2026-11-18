@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 150" role="img" aria-label="RoamSage">
+  <title>RoamSage</title>
+  <g transform="scale(1.25)">
+    <path d="M98.3 27.9 A50 50 0 1 1 68.7 10.8" fill="none" stroke="#0F3D3A" stroke-width="6" stroke-linecap="round"/>
+    <path d="M30 90 L90 90" fill="none" stroke="#0F3D3A" stroke-width="4" stroke-linecap="round"/>
+    <path d="M46 90 C46 70 78 72 74 54 C71 40 80 32 84 19" fill="none" stroke="#0F3D3A" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="84" cy="17" r="6.5" fill="#C8963A"/>
+  </g>
+  <!-- Wordmark is live text in Jost (400, 64px, 10px tracking). Outline it in your design tool once Jost is installed. -->
+  <text x="186" y="97" font-family="Jost, Futura, 'Century Gothic', 'Helvetica Neue', Arial, sans-serif" font-size="64" font-weight="400" letter-spacing="10" fill="#0F3D3A">ROAMSAGE</text>
+</svg>

@@ -1505,3 +1505,147 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Friendly sign-in prompt shown when a visitor selects attractions while logged out. */
+.itinerary-login-prompt {
+  padding: 18px;
+  margin: 12px 0;
+  border: 1px solid #d7e5df;
+  border-radius: 12px;
+  background: #f5faf7;
+  color: #24483b;
+}
+
+.itinerary-login-prompt strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+
+.itinerary-login-prompt p {
+  margin: 0 0 14px;
+  line-height: 1.55;
+}
+
+.itinerary-login-prompt button {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #176b52;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.itinerary-login-prompt button:hover {
+  background: #125640;
+}
+
+
+/* Journey Builder attraction selection controls */
+.itinerary-selection-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+
+.itinerary-selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.itinerary-selection-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 15px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.itinerary-selection-button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.itinerary-selection-button:focus-visible {
+  outline: 3px solid rgba(49, 105, 82, 0.22);
+  outline-offset: 2px;
+}
+
+.itinerary-selection-button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.itinerary-selection-button-primary {
+  color: #fff;
+  background: #244c3e;
+  border-color: #244c3e;
+  box-shadow: 0 3px 9px rgba(36, 76, 62, 0.13);
+}
+
+.itinerary-selection-button-primary:not(:disabled):hover {
+  background: #193b30;
+  border-color: #193b30;
+  box-shadow: 0 5px 13px rgba(36, 76, 62, 0.18);
+}
+
+.itinerary-selection-button-secondary {
+  color: #40584e;
+  background: #fff;
+  border-color: #d9e2dc;
+}
+
+.itinerary-selection-button-secondary:not(:disabled):hover {
+  color: #244c3e;
+  background: #f3f7f4;
+  border-color: #aebfb4;
+}
+
+.itinerary-selection-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 11px;
+  border: 1px solid #e2e9e4;
+  border-radius: 999px;
+  color: #53665c;
+  background: #f6f9f6;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .itinerary-selection-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .itinerary-selection-actions {
+    width: 100%;
+  }
+
+  .itinerary-selection-button {
+    flex: 1 1 auto;
+    min-height: 42px;
+    padding-inline: 12px;
+  }
+}

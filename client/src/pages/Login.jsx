@@ -1,7 +1,6 @@
-import { apiUrl } from "../config/api";
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
@@ -25,7 +24,7 @@ function Login() {
       setLoading(true);
 
       const response = await fetch(
-        apiUrl("/api/auth/login"),
+        "http://localhost:5000/api/auth/login",
         {
           method: "POST",
           headers: {

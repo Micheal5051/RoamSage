@@ -1,0 +1,410 @@
+/* =========================================================
+   ROAMSAGE — MOBILE RESPONSIVENESS OVERRIDES
+   Desktop styles remain unchanged. These rules refine layouts
+   for phones and small tablets across the application.
+========================================================= */
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+#root,
+main,
+section,
+article,
+.page-container {
+  min-width: 0;
+}
+
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  html {
+    scroll-padding-top: 76px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  /* Shared page gutters and headings */
+  .explore-results,
+  .hotels-page,
+  .destination-details-page,
+  .attraction-details-page,
+  .attraction-details-container,
+  .hotel-details-page,
+  .booking-page,
+  .my-bookings-page,
+  .my-trips-page,
+  .trip-dashboard-page,
+  .profile-page,
+  .recommendations-content,
+  .itinerary-page {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .explore-results,
+  .hotels-page {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .explore-results-heading,
+  .my-booking-card-header,
+  .my-booking-card-footer,
+  .trip-hero-top,
+  .dashboard-section-heading {
+    flex-wrap: wrap;
+  }
+
+  .explore-results-heading {
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .explore-home-link {
+    padding: 8px 0;
+  }
+
+  /* Grids should shrink instead of pushing the viewport wider */
+  .attraction-grid,
+  .recommendations-grid,
+  .destination-grid,
+  .profile-form-grid,
+  .itinerary-form-grid,
+  .hotel-details-grid,
+  .booking-layout,
+  .destination-content-layout,
+  .attraction-content-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .attraction-grid,
+  .recommendations-grid,
+  .destination-grid {
+    gap: 18px;
+  }
+
+  /* Forms and controls */
+  .form-row,
+  .itinerary-form-grid,
+  .booking-form-row,
+  .profile-form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .form-group,
+  .itinerary-field,
+  .profile-form-group,
+  .search-input-wrapper {
+    min-width: 0;
+    width: 100%;
+  }
+
+  input,
+  select,
+  textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Detail pages */
+  .destination-hero,
+  .attraction-hero {
+    min-height: 390px;
+  }
+
+  .destination-hero-content,
+  .attraction-hero-content {
+    width: 100%;
+    padding: 28px 22px;
+  }
+
+  .destination-hero-bottom,
+  .attraction-hero-bottom {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* Auth pages */
+  .login-layout,
+  .signup-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: min(100% - 32px, 520px);
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .login-form-section,
+  .signup-form-section,
+  .login-card,
+  .signup-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Itinerary planner and trip dashboard */
+  .itinerary-page {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .itinerary-form-card,
+  .booking-form-card,
+  .booking-summary-card,
+  .profile-header-card,
+  .profile-details-card,
+  .profile-footer-card,
+  .generated-day-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .generated-day-header,
+  .generated-event,
+  .generated-itinerary-heading {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .trip-dashboard-hero,
+  .trips-hero {
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+
+  /* Cards and data rows */
+  .my-booking-details,
+  .confirmation-details,
+  .summary-row,
+  .confirmation-row {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .my-booking-details {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .my-booking-actions {
+    flex-wrap: wrap;
+  }
+
+  .my-booking-actions > *,
+  .my-booking-view-button {
+    max-width: 100%;
+  }
+
+  /* Chat assistant */
+  .ai2-page,
+  .ai2-shell,
+  .ai2-chat-workspace,
+  .ai2-dashboard {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Consistent phone-sized spacing */
+  .explore-results,
+  .hotels-page {
+    padding: 38px 16px 58px;
+  }
+
+  .explore-hero {
+    min-height: 280px;
+    padding: 54px 18px;
+  }
+
+  .explore-hero h1,
+  .hotels-header h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .explore-results-heading h2,
+  .attraction-heading h2 {
+    font-size: clamp(29px, 8vw, 38px);
+    line-height: 1.15;
+  }
+
+  .hotels-header {
+    margin-bottom: 26px;
+  }
+
+  .hotels-header > p:not(.eyebrow),
+  .explore-results-heading p {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .destination-top-navigation,
+  .attraction-top-navigation,
+  .hotel-details-navigation {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .destination-hero,
+  .attraction-hero {
+    min-height: 340px;
+  }
+
+  .destination-hero-content,
+  .attraction-hero-content {
+    padding: 24px 18px;
+  }
+
+  .destination-hero h1,
+  .attraction-hero h1 {
+    font-size: clamp(34px, 10vw, 48px);
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+
+  .booking-page,
+  .profile-page,
+  .my-trips-page,
+  .trip-dashboard-page,
+  .my-bookings-page {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .booking-form-card,
+  .booking-summary-card,
+  .confirmation-card,
+  .profile-header-card,
+  .profile-details-card,
+  .profile-footer-card,
+  .my-booking-card,
+  .trip-card,
+  .recommendation-card,
+  .attraction-card {
+    border-radius: 12px;
+  }
+
+  .recommendations-hero {
+    padding: 58px 18px 60px;
+  }
+
+  .recommendations-content {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .profile-header-card {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .profile-container {
+    width: 100%;
+    max-width: 100%;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .profile-header-info {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .profile-edit-button,
+  .profile-save-button,
+  .confirm-booking-button,
+  .recommendations-submit,
+  .new-trip-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .confirmation-card {
+    width: calc(100% - 28px);
+    margin: 24px auto;
+    padding: 24px 18px;
+  }
+
+  /* Ensure long URLs, names and labels never stretch the page */
+  h1, h2, h3, p, a, label, span, strong, small {
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-content {
+    width: calc(100% - 36px);
+  }
+
+  .hero-content h1 {
+    font-size: clamp(48px, 14vw, 62px);
+  }
+
+  .hero-eyebrow,
+  .section-eyebrow,
+  .explore-eyebrow {
+    letter-spacing: 1.6px;
+  }
+
+  .navbar {
+    min-height: 64px;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .navbar-logo {
+    font-size: 16px;
+  }
+
+  .navbar-menu-toggle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .itinerary-page,
+  .explore-results,
+  .hotels-page {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .my-booking-card,
+  .trip-card,
+  .booking-form-card,
+  .booking-summary-card,
+  .profile-header-card,
+  .profile-details-card,
+  .profile-footer-card {
+    padding: 16px;
+  }
+
+  .confirmation-reference-id {
+    overflow-wrap: anywhere;
+  }
+}

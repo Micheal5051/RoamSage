@@ -93,21 +93,17 @@ const regions = [
   },
 ];
 
-function RegionCard({ region, onDestinationSelect }) {
+function RegionCard({ region, onDestinationSelect, isPhotoTurn }) {
   const [currentPhoto, setCurrentPhoto] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentPhoto(
-        (previous) => (previous + 1) % region.photos.length
-      );
-      setImageError(false);
-    }, 3000);
+    if (!isPhotoTurn || flipped) return;
 
-    return () => clearInterval(interval);
-  }, [region.photos.length]);
+    setCurrentPhoto((previous) => (previous + 1) % region.photos.length);
+    setImageError(false);
+  }, [isPhotoTurn, flipped, region.photos.length]);
 
   const handleDestinationClick = (event, destination) => {
     event.stopPropagation();
@@ -222,6 +218,17 @@ function RegionCard({ region, onDestinationSelect }) {
 }
 
 export default function RegionCards({ onDestinationSelect }) {
+  const [activePhotoRegion, setActivePhotoRegion] = useState(-1);
+
+  // Advance one region at a time so the four cards never fade simultaneously.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActivePhotoRegion((previous) => (previous + 1) % regions.length);
+    }, 1100);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section className="regions-section" id="regions">
       <div className="regions-heading">
@@ -238,11 +245,12 @@ export default function RegionCards({ onDestinationSelect }) {
       </div>
 
       <div className="regions-grid">
-        {regions.map((region) => (
+        {regions.map((region, index) => (
           <RegionCard
             key={region.id}
             region={region}
             onDestinationSelect={onDestinationSelect}
+            isPhotoTurn={activePhotoRegion === index}
           />
         ))}
       </div>

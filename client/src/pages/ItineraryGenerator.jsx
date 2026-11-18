@@ -1,16 +1,15 @@
-import { apiUrl } from "../config/api";
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ItineraryGenerator.css";
 
-const API_URL = apiUrl("/api/itinerary/generate");
-const SAVE_API_URL = apiUrl("/api/trips/save-generated");
-const TRIPS_API_URL = apiUrl("/api/trips");
-const TRIP_BOOKING_API_URL = apiUrl("/api/bookings/trip");
-const FOOD_API_URL = apiUrl("/api/food/nearby");
+const API_URL = "http://localhost:5000/api/itinerary/generate";
+const SAVE_API_URL = "http://localhost:5000/api/trips/save-generated";
+const TRIPS_API_URL = "http://localhost:5000/api/trips";
+const TRIP_BOOKING_API_URL = "http://localhost:5000/api/bookings/trip";
+const FOOD_API_URL = "http://localhost:5000/api/food/nearby";
 const MAX_FOOD_RESULTS = 15;
-const HOTELS_API_URL = apiUrl("/api/hotels");
+const HOTELS_API_URL = "http://localhost:5000/api/hotels";
 const HOTEL_SEARCH_RADIUS_KM = 5;
 
 // Coordinates match the attraction records in server/data/attractions.js.
@@ -870,16 +869,7 @@ function ItineraryGenerator() {
   const [selectedAttractionIds, setSelectedAttractionIds] = useState([]);
   const [attractionsLoading, setAttractionsLoading] = useState(false);
   const [attractionsError, setAttractionsError] = useState("");
-
-  const [journeyPlan, setJourneyPlan] = useState({
-    outbound: {
-      arrivalDateTime: ""
-    },
-    returnJourney: {
-      departureDateTime: ""
-    },
-    restDurationMinutes: 120
-  });
+  const [loginRequired, setLoginRequired] = useState(false);
 
   const [itinerary, setItinerary] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -904,9 +894,18 @@ function ItineraryGenerator() {
     let cancelled = false;
     async function loadAttractionOptions() {
       if (!destination.trim()) return;
-      setAttractionsLoading(true);
+      const token = localStorage.getItem("token");
       setAttractionsError("");
       setSelectedAttractionIds([]);
+      setAttractionOptions([]);
+      setLoginRequired(!token);
+
+      if (!token) {
+        setAttractionsLoading(false);
+        return;
+      }
+
+      setAttractionsLoading(true);
       try {
         const response = await fetch(API_URL, {
           method: "POST",
@@ -923,6 +922,10 @@ function ItineraryGenerator() {
           })
         });
         const data = await response.json();
+        if (response.status === 401) {
+          if (!cancelled) setLoginRequired(true);
+          throw new Error("Please log in to explore and select attractions.");
+        }
         if (!response.ok) throw new Error(data.message || "Unable to load attractions.");
         if (!cancelled) {
           const options = Array.isArray(data.availableAttractions) ? data.availableAttractions : [];
@@ -932,7 +935,9 @@ function ItineraryGenerator() {
       } catch (loadError) {
         if (!cancelled) {
           setAttractionOptions([]);
-          setAttractionsError(loadError.message || "Unable to load attractions.");
+          if (loadError.message !== "Please log in to explore and select attractions.") {
+            setAttractionsError(loadError.message || "Unable to load attractions.");
+          }
         }
       } finally {
         if (!cancelled) setAttractionsLoading(false);
@@ -951,7 +956,7 @@ function ItineraryGenerator() {
       setDestinationsError("");
 
       try {
-        const response = await fetch(apiUrl("/api/destinations"));
+        const response = await fetch("http://localhost:5000/api/destinations");
         const data = await response.json();
 
         if (!response.ok) {
@@ -1490,29 +1495,6 @@ function ItineraryGenerator() {
                 }
               : null
           },
-
-          journeyPlan: {
-            outbound: {
-              arrivalDateTime:
-                journeyPlan.outbound.arrivalDateTime
-                  ? new Date(
-                      journeyPlan.outbound.arrivalDateTime
-                    ).toISOString()
-                  : null
-            },
-
-            returnJourney: {
-              departureDateTime:
-                journeyPlan.returnJourney.departureDateTime
-                  ? new Date(
-                      journeyPlan.returnJourney.departureDateTime
-                    ).toISOString()
-                  : null
-            },
-
-            restDurationMinutes:
-              journeyPlan.restDurationMinutes
-          }
         })
       });
 
@@ -1572,10 +1554,10 @@ function ItineraryGenerator() {
     <main className="itinerary-page">
       <section className="itinerary-hero">
         <p className="itinerary-eyebrow">
-          YOUR PERSONAL TRAVEL GUIDE
+          ROAMSAGE JOURNEYCRAFT
         </p>
 
-        <h1>Plan your sightseeing</h1>
+        <h1>Build your journey</h1>
 
         <p>
           Choose your dates and interests. We'll create a day-by-day
@@ -1701,15 +1683,46 @@ function ItineraryGenerator() {
             <p>Select only the places you are interested in. Travel Explorer will estimate the days needed based on visit duration and distances.</p>
             {attractionsLoading ? (
               <p role="status">Loading attractions for {destination}...</p>
+            ) : loginRequired ? (
+              <div className="itinerary-login-prompt" role="status">
+                <strong>Login Required</strong>
+                <p>Please log in to explore and select attractions for your trip. Sign in to discover amazing places and plan your journey!</p>
+                <button
+                  type="button"
+                  onClick={() => navigate("/login", { state: { from: "/itinerary" } })}
+                >
+                  Log In
+                </button>
+              </div>
             ) : attractionsError ? (
               <p role="alert">{attractionsError}</p>
             ) : attractionOptions.length === 0 ? (
               <p>No attraction list is available for this destination yet.</p>
             ) : (
               <>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "12px" }}>
-                  <button type="button" onClick={() => setSelectedAttractionIds(attractionOptions.map(item => String(item.id)))}>Select all</button>
-                  <button type="button" onClick={() => setSelectedAttractionIds([])}>Clear selection</button>
+                <div className="itinerary-selection-toolbar">
+                  <div className="itinerary-selection-actions">
+                    <button
+                      type="button"
+                      className="itinerary-selection-button itinerary-selection-button-primary"
+                      onClick={() => setSelectedAttractionIds(attractionOptions.map(item => String(item.id)))}
+                      disabled={selectedAttractionIds.length === attractionOptions.length}
+                    >
+                      <span aria-hidden="true">✓</span>
+                      Select all
+                    </button>
+                    <button
+                      type="button"
+                      className="itinerary-selection-button itinerary-selection-button-secondary"
+                      onClick={() => setSelectedAttractionIds([])}
+                      disabled={selectedAttractionIds.length === 0}
+                    >
+                      Clear selection
+                    </button>
+                  </div>
+                  <span className="itinerary-selection-count" aria-live="polite">
+                    {selectedAttractionIds.length} of {attractionOptions.length} selected
+                  </span>
                 </div>
                 <div className="itinerary-interest-options">
                   {attractionOptions.map(place => (
@@ -1729,90 +1742,6 @@ function ItineraryGenerator() {
                 <p style={{ fontSize: "13px", marginBottom: 0 }}>{selectedAttractionIds.length} of {attractionOptions.length} attractions selected.</p>
               </>
             )}
-          </fieldset>
-
-          <fieldset className="itinerary-interests">
-            <legend>Arrival and return details</legend>
-
-            <p>
-              Add your expected arrival time if you know it. If you leave it
-              blank, sightseeing will be planned from the next day. You can
-              also add your return departure time.
-            </p>
-
-            <div className="itinerary-form-grid">
-              <div className="itinerary-field">
-                <label htmlFor="journey-arrival-time">
-                  Expected arrival date and time (optional)
-                </label>
-
-                <input
-                  id="journey-arrival-time"
-                  type="datetime-local"
-                  value={journeyPlan.outbound.arrivalDateTime}
-                  onChange={(event) =>
-                    setJourneyPlan((current) => ({
-                      ...current,
-
-                      outbound: {
-                        ...current.outbound,
-                        arrivalDateTime: event.target.value
-                      }
-                    }))
-                  }
-                />
-              </div>
-
-              <div className="itinerary-field">
-                <label htmlFor="journey-rest">
-                  Rest after arrival
-                </label>
-
-                <select
-                  id="journey-rest"
-                  value={journeyPlan.restDurationMinutes}
-                  onChange={(event) =>
-                    setJourneyPlan((current) => ({
-                      ...current,
-
-                      restDurationMinutes: Number(
-                        event.target.value
-                      )
-                    }))
-                  }
-                >
-                  <option value="60">1 hour</option>
-                  <option value="120">2 hours</option>
-                  <option value="180">3 hours</option>
-                  <option value="240">4 hours</option>
-                  <option value="480">8 hours</option>
-                </select>
-              </div>
-
-              <div className="itinerary-field">
-                <label htmlFor="journey-return-departure">
-                  Return departure date and time (optional)
-                </label>
-
-                <input
-                  id="journey-return-departure"
-                  type="datetime-local"
-                  value={
-                    journeyPlan.returnJourney.departureDateTime
-                  }
-                  onChange={(event) =>
-                    setJourneyPlan((current) => ({
-                      ...current,
-
-                      returnJourney: {
-                        ...current.returnJourney,
-                        departureDateTime: event.target.value
-                      }
-                    }))
-                  }
-                />
-              </div>
-            </div>
           </fieldset>
 
           <fieldset className="itinerary-interests">
@@ -1853,7 +1782,7 @@ function ItineraryGenerator() {
           >
             {loading
               ? "Generating itinerary..."
-              : "Generate itinerary"}
+              : "Create Trip Plan"}
           </button>
         </form>
       </section>
